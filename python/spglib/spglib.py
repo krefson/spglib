@@ -36,23 +36,20 @@
 from __future__ import annotations
 
 import dataclasses
-import sys
 import warnings
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Union
 
 import numpy as np
 
+from ._compat.typing import TypeAlias
+
 try:
     from . import _spglib  # type: ignore[attr-defined]
 except ImportError:
-    if sys.version_info < (3, 10):
-        from importlib_resources import as_file, files
-        from typing_extensions import TypeAlias
-    else:
-        from importlib.resources import as_file, files
-        from typing import TypeAlias
     from ctypes import cdll
+
+    from ._compat.importlib.resources import as_file, files
 
     root = files("spglib.lib")
     for file in root.iterdir():
