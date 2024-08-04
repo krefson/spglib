@@ -23,6 +23,16 @@ Users can now access the rotation and translation operations from the database, 
   reliable type annotation. This will be revisited when refactoring the interface to datastructures.
 - Added runtime and annotation deprecations using `warnings.deprecated`
 
+### Main changes
+
+The python bindings are now linked to the C library at build time, see the Python changes for more details.
+
+### Python API
+
+- The PyPI wheel contains a bundled `libsymspg` library, and it *always* has priority through RPATH priority.
+- When building from source (repository or sdist) it will try to link to a system installed `spglib` and fallback to
+  the bundled version if it failed.
+
 ## v2.5.0 (9 Jul. 2024)
 
 ### Main changes
