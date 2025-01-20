@@ -17,6 +17,12 @@ GitHub release pages and in the git history.
 
 Users can now access the rotation and translation operations from the database, provided the Hall number.
 
+### Python API
+
+- Python package is now properly type annotated. Note that legacy `tuple` and `dict` interface still do not have
+  reliable type annotation. This will be revisited when refactoring the interface to datastructures.
+- Added runtime and annotation deprecations using `warnings.deprecated`
+
 ## v2.5.0 (9 Jul. 2024)
 
 ### Main changes
