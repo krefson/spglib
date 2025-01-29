@@ -19,24 +19,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-13, macos-latest ]
+        os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-13, macos-latest ]
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-        # CIBW requires emulation to build for arm linux
-        # https://cibuildwheel.readthedocs.io/en/stable/faq/#emulation
-      - name: Set up QEMU for Linux-arm
-        if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22
         env:
           CIBW_BUILD: ${{ inputs.cibw_build }}
-          CIBW_ARCHS_LINUX: auto aarch64
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
