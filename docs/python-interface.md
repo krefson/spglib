@@ -122,7 +122,7 @@ except ImportError:
 ## Version number
 
 In version 1.8.3 or later, the version number is obtained by
-`spglib.__version__` or {func}`spglib.get_version`.
+`spglib.__version__` or {func}`spglib.spglib.get_version`.
 
 ## Example
 
@@ -195,65 +195,65 @@ details, see {ref}`variables_symprec`, {ref}`variables_angle_tolerance`, and
 ### Version
 
 ```{autodoc2-summary}
-  spglib.get_version
+  spglib.spglib.get_version
 ```
 
 ### Error
 
 ```{autodoc2-summary}
-  spglib.get_error_message
+  spglib.spglib.get_error_message
 ```
 
 ### Space-group symmetry search
 
 ```{autodoc2-summary}
-  spglib.get_symmetry
-  spglib.get_symmetry_dataset
+  spglib.spglib.get_symmetry
+  spglib.spglib.get_symmetry_dataset
 ```
 
 ### Space-group type search
 
 ```{autodoc2-summary}
-  spglib.get_spacegroup
+  spglib.spglib.get_spacegroup
 ```
 
 ### Standardization and finding primitive cell
 
 ```{autodoc2-summary}
-  spglib.standardize_cell
-  spglib.find_primitive
-  spglib.refine_cell
+  spglib.spglib.standardize_cell
+  spglib.spglib.find_primitive
+  spglib.spglib.refine_cell
 ```
 
 ### Space-group dataset access
 
 ```{autodoc2-summary}
-  spglib.get_symmetry_from_database
-  spglib.get_spacegroup_type
-  spglib.get_spacegroup_type_from_symmetry
+  spglib.spglib.get_symmetry_from_database
+  spglib.spglib.get_spacegroup_type
+  spglib.spglib.get_spacegroup_type_from_symmetry
 ```
 
 ### Magnetic symmetry
 
 ```{autodoc2-summary}
-  spglib.get_magnetic_symmetry
-  spglib.get_magnetic_symmetry_dataset
-  spglib.get_magnetic_spacegroup_type
-  spglib.get_magnetic_spacegroup_type_from_symmetry
-  spglib.get_magnetic_symmetry_from_database
+  spglib.spglib.get_magnetic_symmetry
+  spglib.spglib.get_magnetic_symmetry_dataset
+  spglib.spglib.get_magnetic_spacegroup_type
+  spglib.spglib.get_magnetic_spacegroup_type_from_symmetry
+  spglib.spglib.get_magnetic_symmetry_from_database
 ```
 
 ### Lattice reduction
 
 ```{autodoc2-summary}
-  spglib.niggli_reduce
-  spglib.delaunay_reduce
+  spglib.spglib.niggli_reduce
+  spglib.spglib.delaunay_reduce
 ```
 
 ### Kpoints
 
 ```{autodoc2-summary}
-  spglib.get_ir_reciprocal_mesh
+  spglib.spglib.get_ir_reciprocal_mesh
 ```
 
 ```python
@@ -330,5 +330,5 @@ print((grid[np.unique(mapping)] + [0.5, 0.5, 0.5]) / mesh)
 ```
 
 ```{autodoc2-summary}
-  spglib.get_hall_number_from_symmetry
+  spglib.spglib.get_hall_number_from_symmetry
 ```

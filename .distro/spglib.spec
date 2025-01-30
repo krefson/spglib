@@ -1,9 +1,5 @@
-%if 0%{?epel} && 0%{?epel} <= 9
 # scikit-build-core is not available on epel9 and below
-%bcond_with python
-%else
-%bcond_without python
-%endif
+%bcond python %[ !(0%{?epel} && 0%{?epel} <= 9) ]
 
 Name:           spglib
 Summary:        C library for finding and handling crystal symmetries
@@ -14,8 +10,6 @@ URL:            https://spglib.readthedocs.io/
 
 Source:         https://github.com/spglib/spglib/archive/refs/tags/v%{version}.tar.gz
 
-Patch:          Relax_numpy_requirements.patch
-
 BuildRequires:  ninja-build
 BuildRequires:  cmake
 BuildRequires:  gcc
@@ -24,6 +18,7 @@ BuildRequires:  gcc-fortran
 BuildRequires:  cmake(GTest)
 %if %{with python}
 BuildRequires:  python3-devel
+BuildRequires:  tomcli
 %endif
 
 %description
@@ -68,6 +63,10 @@ develop applications with spglib Python3 bindings.
 
 %prep
 %autosetup -p1 -n spglib-%{version}
+%if %{with python}
+# Remove the numpy version constraint
+tomcli set pyproject.toml arrays replace "build-system.requires" "numpy.*" "numpy"
+%endif
 
 
 %generate_buildrequires

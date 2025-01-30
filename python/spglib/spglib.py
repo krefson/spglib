@@ -36,23 +36,21 @@
 from __future__ import annotations
 
 import dataclasses
-import sys
 import warnings
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Union
 
 import numpy as np
 
+from ._compat.typing import TypeAlias
+from ._compat.warnings import deprecated
+
 try:
-    from . import _spglib  # type: ignore[attr-defined]
+    from . import _spglib
 except ImportError:
-    if sys.version_info < (3, 10):
-        from importlib_resources import as_file, files
-        from typing_extensions import TypeAlias
-    else:
-        from importlib.resources import as_file, files
-        from typing import TypeAlias
     from ctypes import cdll
+
+    from ._compat.importlib.resources import as_file, files
 
     root = files("spglib.lib")
     for file in root.iterdir():
@@ -60,7 +58,7 @@ except ImportError:
             with as_file(file) as bundled_lib:
                 try:
                     cdll.LoadLibrary(str(bundled_lib))
-                    from . import _spglib  # type: ignore[attr-defined]
+                    from . import _spglib
 
                     break
                 except ImportError as err:
@@ -110,14 +108,9 @@ class DictInterface(Mapping[str, "Any"]):
         Please use attribute interface instead (``obj.field``)
     """
 
+    @deprecated("dict interface is deprecated. Use attribute interface instead")
     def __getitem__(self, key: str) -> Any:
         """Return the value of the key."""
-        warnings.warn(
-            f"dict interface ({self.__class__.__name__}['{key}']) is deprecated."
-            f"Use attribute interface ({self.__class__.__name__}.{key}) instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return dataclasses.asdict(self)[key]
 
     def __len__(self) -> int:
@@ -444,24 +437,19 @@ class MagneticSpaceGroupType(DictInterface):
     """Type of MSG from 1 to 4"""
 
 
-def get_version():
+@deprecated("Use __version__ or spg_get_version instead")
+def get_version() -> tuple[int, int, int]:
     """Return version number of spglib with tuple of three numbers.
 
     .. versionadded:: 1.8.3
     .. deprecated:: 2.3.0
         Use :py:func:`spg_get_version` and ``spglib.__version__`` instead
     """
-    warnings.warn(
-        "get_version() is deprecated. Use __version__ for the python binding"
-        "version and get_spg_version for the detected spglib library version.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
     _set_no_error()
     return _spglib.version_tuple()
 
 
-def spg_get_version():
+def spg_get_version() -> str:
     """Get the X.Y.Z version of the detected spglib C library.
 
     .. versionadded:: 2.3.0
@@ -471,7 +459,7 @@ def spg_get_version():
     return _spglib.version_string()
 
 
-def spg_get_version_full():
+def spg_get_version_full() -> str:
     """Get the full version of the detected spglib C library.
 
     .. versionadded:: 2.3.0
@@ -481,7 +469,7 @@ def spg_get_version_full():
     return _spglib.version_full()
 
 
-def spg_get_commit():
+def spg_get_commit() -> str:
     """Get the commit of the detected spglib C library.
 
     .. versionadded:: 2.3.0
@@ -493,11 +481,11 @@ def spg_get_commit():
 
 def get_symmetry(
     cell: Cell,
-    symprec=1e-5,
-    angle_tolerance=-1.0,
-    mag_symprec=-1.0,
-    is_magnetic=True,
-) -> dict | None:
+    symprec: float = 1e-5,
+    angle_tolerance: float = -1.0,
+    mag_symprec: float = -1.0,
+    is_magnetic: bool = True,
+) -> dict[str, Any] | None:
     r"""Find symmetry operations from a crystal structure and site tensors.
 
     .. warning::
@@ -656,12 +644,12 @@ def get_symmetry(
 
 def get_magnetic_symmetry(
     cell: Cell,
-    symprec=1e-5,
-    angle_tolerance=-1.0,
-    mag_symprec=-1.0,
-    is_axial=None,
-    with_time_reversal=True,
-) -> dict | None:
+    symprec: float = 1e-5,
+    angle_tolerance: float = -1.0,
+    mag_symprec: float = -1.0,
+    is_axial: bool | None = None,
+    with_time_reversal: bool = True,
+) -> dict[str, Any] | None:
     r"""Find magnetic symmetry operations from a crystal structure and site tensors.
 
     Parameters
@@ -817,7 +805,7 @@ def get_magnetic_symmetry(
         }
 
 
-def _build_dataset_dict(spg_ds: list) -> SpglibDataset:
+def _build_dataset_dict(spg_ds: list[Any]) -> SpglibDataset:
     letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     dataset = SpglibDataset(
@@ -873,9 +861,9 @@ def _build_dataset_dict(spg_ds: list) -> SpglibDataset:
 
 def get_symmetry_dataset(
     cell: Cell,
-    symprec=1e-5,
-    angle_tolerance=-1.0,
-    hall_number=0,
+    symprec: float = 1e-5,
+    angle_tolerance: float = -1.0,
+    hall_number: int = 0,
 ) -> SpglibDataset | None:
     """Search symmetry dataset from an input cell.
 
@@ -933,7 +921,7 @@ def get_symmetry_dataset(
 
 
 def get_symmetry_layerdataset(
-    cell: Cell, aperiodic_dir=2, symprec=1e-5
+    cell: Cell, aperiodic_dir: int = 2, symprec: float = 1e-5
 ) -> SpglibDataset | None:
     """TODO: Add comments."""
     _set_no_error()
@@ -958,10 +946,10 @@ def get_symmetry_layerdataset(
 
 def get_magnetic_symmetry_dataset(
     cell: Cell,
-    is_axial=None,
-    symprec=1e-5,
-    angle_tolerance=-1.0,
-    mag_symprec=-1.0,
+    is_axial: bool | None = None,
+    symprec: float = 1e-5,
+    angle_tolerance: float = -1.0,
+    mag_symprec: float = -1.0,
 ) -> SpglibMagneticDataset | None:
     """Search magnetic symmetry dataset from an input cell. If it fails, return None.
 
@@ -1043,7 +1031,9 @@ def get_magnetic_symmetry_dataset(
     return dataset
 
 
-def get_layergroup(cell: Cell, aperiodic_dir=2, symprec=1e-5) -> SpglibDataset | None:
+def get_layergroup(
+    cell: Cell, aperiodic_dir: int = 2, symprec: float = 1e-5
+) -> SpglibDataset | None:
     """Return layer group in ....
 
     If it fails, None is returned.
@@ -1061,9 +1051,9 @@ def get_layergroup(cell: Cell, aperiodic_dir=2, symprec=1e-5) -> SpglibDataset |
 
 def get_spacegroup(
     cell: Cell,
-    symprec=1e-5,
-    angle_tolerance=-1.0,
-    symbol_type=0,
+    symprec: float = 1e-5,
+    angle_tolerance: float = -1.0,
+    symbol_type: int = 0,
 ) -> str | None:
     """Return space group in international table symbol and number as a string.
 
@@ -1135,10 +1125,10 @@ def get_spacegroup_type(hall_number: int) -> SpaceGroupType | None:
 
 
 def get_spacegroup_type_from_symmetry(
-    rotations,
-    translations,
-    lattice=None,
-    symprec=1e-5,
+    rotations: ArrayLike[np.intc],
+    translations: ArrayLike[np.double],
+    lattice: ArrayLike[np.double] | None = None,
+    symprec: float = 1e-5,
 ) -> SpaceGroupType | None:
     """Return space-group type information from symmetry operations.
 
@@ -1295,7 +1285,7 @@ def get_magnetic_spacegroup_type_from_symmetry(
         return None
 
 
-def get_pointgroup(rotations) -> tuple[str, int, np.ndarray]:
+def get_pointgroup(rotations: ArrayLike[np.intc]) -> tuple[str, int, np.ndarray] | None:
     """Return point group in international table symbol and number.
 
     The symbols are mapped to the numbers as follows:
@@ -1343,10 +1333,10 @@ def get_pointgroup(rotations) -> tuple[str, int, np.ndarray]:
 
 def standardize_cell(
     cell: Cell,
-    to_primitive=False,
-    no_idealize=False,
-    symprec=1e-5,
-    angle_tolerance=-1.0,
+    to_primitive: bool = False,
+    no_idealize: bool = False,
+    symprec: float = 1e-5,
+    angle_tolerance: float = -1.0,
 ) -> Cell | None:
     """Return standardized cell. When the search failed, ``None`` is returned.
 
@@ -1408,7 +1398,9 @@ def standardize_cell(
         return None
 
 
-def refine_cell(cell: Cell, symprec=1e-5, angle_tolerance=-1.0) -> Cell | None:
+def refine_cell(
+    cell: Cell, symprec: float = 1e-5, angle_tolerance: float = -1.0
+) -> Cell | None:
     """Return refined cell. When the search failed, ``None`` is returned.
 
     The standardized unit cell is returned by a tuple of
@@ -1452,7 +1444,9 @@ def refine_cell(cell: Cell, symprec=1e-5, angle_tolerance=-1.0) -> Cell | None:
         return None
 
 
-def find_primitive(cell: Cell, symprec=1e-5, angle_tolerance=-1.0) -> Cell | None:
+def find_primitive(
+    cell: Cell, symprec: float = 1e-5, angle_tolerance: float = -1.0
+) -> Cell | None:
     """Primitive cell is searched in the input cell. If it fails, ``None`` is returned.
 
     The primitive cell is returned by a tuple of (lattice, positions, numbers).
@@ -1484,7 +1478,7 @@ def find_primitive(cell: Cell, symprec=1e-5, angle_tolerance=-1.0) -> Cell | Non
         return None
 
 
-def get_symmetry_from_database(hall_number) -> dict | None:
+def get_symmetry_from_database(hall_number: int) -> dict[str, Any] | None:
     """Return symmetry operations corresponding to a Hall symbol. If fails, return None.
 
     Parameters
@@ -1519,7 +1513,9 @@ def get_symmetry_from_database(hall_number) -> dict | None:
         }
 
 
-def get_magnetic_symmetry_from_database(uni_number, hall_number=0) -> dict | None:
+def get_magnetic_symmetry_from_database(
+    uni_number: int, hall_number: int = 0
+) -> dict[str, Any] | None:
     """Return magnetic symmetry operations from UNI number between 1 and 1651.
 
     If fails, return None.
@@ -1577,7 +1573,9 @@ def get_magnetic_symmetry_from_database(uni_number, hall_number=0) -> dict | Non
 ############
 # k-points #
 ############
-def get_grid_point_from_address(grid_address, mesh):
+def get_grid_point_from_address(
+    grid_address: ArrayLike[np.intc], mesh: ArrayLike[np.intc]
+) -> int | None:
     """Return grid point index by translating grid address."""
     _set_no_error()
 
@@ -1588,13 +1586,13 @@ def get_grid_point_from_address(grid_address, mesh):
 
 
 def get_ir_reciprocal_mesh(
-    mesh,
-    cell,
-    is_shift=None,
-    is_time_reversal=True,
-    symprec=1e-5,
-    is_dense=False,
-):
+    mesh: ArrayLike[np.intc],
+    cell: Cell,
+    is_shift: ArrayLike[np.intc] | None = None,
+    is_time_reversal: bool = True,
+    symprec: float = 1e-5,
+    is_dense: bool = False,
+) -> tuple[np.ndarray, np.ndarray]:
     """Return k-points mesh and k-point map to the irreducible k-points.
 
     The symmetry is searched from the input cell.
@@ -1663,13 +1661,13 @@ def get_ir_reciprocal_mesh(
 
 
 def get_stabilized_reciprocal_mesh(
-    mesh,
-    rotations,
-    is_shift=None,
-    is_time_reversal=True,
-    qpoints=None,
-    is_dense=False,
-):
+    mesh: ArrayLike[np.intc],
+    rotations: ArrayLike[np.intc],
+    is_shift: ArrayLike[np.intc] | None = None,
+    is_time_reversal: bool = True,
+    qpoints: ArrayLike[np.double] | None = None,
+    is_dense: bool = False,
+) -> tuple[np.ndarray, np.ndarray]:
     """Return k-point map to the irreducible k-points and k-point grid points.
 
     The symmetry is searched from the input rotation matrices in real space.
@@ -1742,12 +1740,12 @@ def get_stabilized_reciprocal_mesh(
 
 
 def get_grid_points_by_rotations(
-    address_orig,
-    reciprocal_rotations,
-    mesh,
-    is_shift=None,
-    is_dense=False,
-):
+    address_orig: ArrayLike[np.intc],
+    reciprocal_rotations: ArrayLike[np.intc],
+    mesh: ArrayLike[np.intc],
+    is_shift: ArrayLike[np.intc] | None = None,
+    is_dense: bool = False,
+) -> np.ndarray:
     """Return grid points obtained after rotating input grid address.
 
     Parameters
@@ -1799,13 +1797,13 @@ def get_grid_points_by_rotations(
 
 
 def get_BZ_grid_points_by_rotations(
-    address_orig,
-    reciprocal_rotations,
-    mesh,
-    bz_map,
-    is_shift=None,
-    is_dense=False,
-):
+    address_orig: ArrayLike[np.intc],
+    reciprocal_rotations: ArrayLike[np.intc],
+    mesh: ArrayLike[np.intc],
+    bz_map: ArrayLike[np.uintp],
+    is_shift: ArrayLike[np.intc] | None = None,
+    is_dense: bool = False,
+) -> np.ndarray:
     """Return grid points obtained after rotating input grid address.
 
     Parameters
@@ -1865,12 +1863,12 @@ def get_BZ_grid_points_by_rotations(
 
 
 def relocate_BZ_grid_address(
-    grid_address,
-    mesh,
-    reciprocal_lattice,  # column vectors
-    is_shift=None,
-    is_dense=False,
-):
+    grid_address: ArrayLike[np.intc],
+    mesh: ArrayLike[np.intc],
+    reciprocal_lattice: ArrayLike[np.double],  # column vectors
+    is_shift: ArrayLike[np.intc] | None = None,
+    is_dense: bool = False,
+) -> tuple[np.ndarray, np.ndarray]:
     """Grid addresses are relocated to be inside first Brillouin zone.
 
     Number of ir-grid-points inside Brillouin zone is returned.
@@ -1927,7 +1925,9 @@ def relocate_BZ_grid_address(
         return bz_grid_address[:num_bz_ir], np.array(bz_map, dtype="intc")
 
 
-def delaunay_reduce(lattice, eps=1e-5):
+def delaunay_reduce(
+    lattice: ArrayLike[np.double], eps: float = 1e-5
+) -> np.ndarray | None:
     r"""Run Delaunay reduction. When the search failed, `None` is returned.
 
     The transformation from original basis vectors
@@ -1985,7 +1985,9 @@ def delaunay_reduce(lattice, eps=1e-5):
         return np.array(np.transpose(delaunay_lattice), dtype="double", order="C")
 
 
-def niggli_reduce(lattice, eps=1e-5):
+def niggli_reduce(
+    lattice: ArrayLike[np.double], eps: float = 1e-5
+) -> np.ndarray | None:
     r"""Run Niggli reduction. When the search failed, ``None`` is returned.
 
     The transformation from original basis vectors :math:`( \mathbf{a} \; \mathbf{b} \; \mathbf{c} )` to final basis vectors :math:`( \mathbf{a}' \; \mathbf{b}' \; \mathbf{c}' )` is achieved by linear
@@ -2047,7 +2049,7 @@ def niggli_reduce(lattice, eps=1e-5):
         return np.array(np.transpose(niggli_lattice), dtype="double", order="C")
 
 
-def get_error_message():
+def get_error_message() -> str:
     """Return error message why spglib failed.
 
     .. warning::
@@ -2105,15 +2107,20 @@ def _expand_cell(
     return (lattice, positions, numbers, magmoms)
 
 
-def _set_error_message():
+def _set_error_message() -> None:
     spglib_error.message = _spglib.error_message()
 
 
-def _set_no_error():
+def _set_no_error() -> None:
     spglib_error.message = "no error"
 
 
-def get_hall_number_from_symmetry(rotations, translations, symprec=1e-5) -> int | None:
+@deprecated("Use get_spacegroup_type_from_symmetry instead")
+def get_hall_number_from_symmetry(
+    rotations: ArrayLike[np.intc],
+    translations: ArrayLike[np.double],
+    symprec: float = 1e-5,
+) -> int | None:
     """Hall number is obtained from a set of symmetry operations. If fails, return None.
 
     .. deprecated:: 2.0
@@ -2136,13 +2143,6 @@ def get_hall_number_from_symmetry(rotations, translations, symprec=1e-5) -> int 
     different from usual one, but is given in the fractional
     coordinates and so it should be small like ``1e-5``.
     """
-    warnings.warn(
-        "get_hall_number_from_symmetry() is deprecated. "
-        "Use get_spacegroup_type_from_symmetry() instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
     r = np.array(rotations, dtype="intc", order="C")
     t = np.array(translations, dtype="double", order="C")
     hall_number = _spglib.hall_number_from_symmetry(r, t, symprec)

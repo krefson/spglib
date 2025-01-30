@@ -15,7 +15,7 @@ dynamic = ["version"]
 dependencies = [
     "numpy>=1.20,<3",
     "importlib-resources; python_version<'3.10'",
-    "typing-extensions; python_version<'3.10'",
+    "typing-extensions>=4.9.0; python_version<'3.13'",
 ]
 authors = [
     {name="Atsushi Togo", email="atz.togo@gmail.com"},
@@ -207,10 +207,21 @@ files = ["python", "test/functional/python", "example/python_api"]
 python_version = "3.12"
 warn_unused_configs = true
 show_error_codes = true
-# TODO: Enable strict mode once we clean up type annotations
-# strict = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 no_strict_optional = true
+# TODO: Cannot handle examples and tests strictly yet
+strict = false
+# For tests, we don't need type-annotation on test fixtures
+# Haven't seen `mypy.overrides` used with `files` instead of `modules`,
+# so adding these options globally
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+# For the main library we want to be as strict as possible
+module = ["spglib.*"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
 
 [tool.codespell]
 ignore-words = "docs/codespell.txt"
