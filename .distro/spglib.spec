@@ -5,7 +5,7 @@ Name:           spglib
 Summary:        C library for finding and handling crystal symmetries
 Version:        0.0.0
 Release:        %autorelease
-License:        BSD
+License:        BSD-3-Clause
 URL:            https://spglib.readthedocs.io/
 
 Source:         https://github.com/spglib/spglib/archive/refs/tags/v%{version}.tar.gz
@@ -53,7 +53,7 @@ Fortran applications that use spglib.
 %if %{with python}
 %package -n     python3-spglib
 Summary:        Python3 library of spglib
-Requires:       spglib = %{version}
+Requires:       spglib = %{version}-%{release}
 
 %description -n python3-spglib
 This package contains the libraries to
