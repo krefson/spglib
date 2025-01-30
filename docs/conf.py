@@ -12,6 +12,8 @@ extensions = [
     "myst_parser",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
+    "sphinx.ext.intersphinx",
+    "sphinx_tippy",
 ]
 
 exclude_patterns = [
@@ -98,3 +100,18 @@ extlinks = {
     "path": ("https://github.com/spglib/spglib/tree/develop/%s", "%s"),
     "user": ("https://github.com/%s", "%s"),
 }
+
+# -----------------------------------------------------------------------------
+# intersphinx and tippy
+# -----------------------------------------------------------------------------
+
+intersphinx_mapping = {
+    "cmake": ("https://cmake.org/cmake/help/latest", None),
+    "scikit": ("https://scikit-build-core.readthedocs.io/en/latest/", None),
+}
+
+tippy_rtd_urls = [
+    # Only works with RTD hosted intersphinx
+    # "https://cmake.org/cmake/help/latest",
+    "https://scikit-build-core.readthedocs.io/en/latest/",
+]

@@ -62,6 +62,7 @@ docs = [
     "sphinx-autodoc-typehints",
     "myst-parser >= 2.0",
     "linkify-it-py",
+    "sphinx-tippy",
 ]
 test-cov = [
     "spglib[test]",
