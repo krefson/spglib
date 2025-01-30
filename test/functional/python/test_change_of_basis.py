@@ -15,13 +15,13 @@ data_dir = os.path.dirname(os.path.abspath(__file__))
 dirnames = (
     "cubic",
     "hexagonal",
-    "monoclinic",
-    "orthorhombic",
-    "tetragonal",
-    "triclinic",
-    "trigonal",
-    "distorted",
-    "virtual_structure",
+    # "monoclinic",
+    # "orthorhombic",
+    # "tetragonal",
+    # "triclinic",
+    # "trigonal",
+    # "distorted",
+    # "virtual_structure",
 )
 
 

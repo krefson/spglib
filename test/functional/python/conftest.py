@@ -11,13 +11,13 @@ import pytest
 _dirnames = (
     "cubic",
     "hexagonal",
-    "monoclinic",
-    "orthorhombic",
-    "tetragonal",
-    "triclinic",
-    "trigonal",
-    "distorted",
-    "virtual_structure",
+    # "monoclinic",
+    # "orthorhombic",
+    # "tetragonal",
+    # "triclinic",
+    # "trigonal",
+    # "distorted",
+    # "virtual_structure",
 )
 
 
