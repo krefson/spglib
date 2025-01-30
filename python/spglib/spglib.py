@@ -76,6 +76,43 @@ if TYPE_CHECKING:
 
     from numpy.typing import ArrayLike, NDArray
 
+__all__ = [
+    "MagneticSpaceGroupType",
+    "SpaceGroupType",
+    "SpglibDataset",
+    "SpglibMagneticDataset",
+    "delaunay_reduce",
+    "find_primitive",
+    # "get_BZ_grid_points_by_rotations",
+    "get_error_message",
+    # "get_grid_point_from_address",
+    # "get_grid_points_by_rotations",
+    # "get_hall_number_from_symmetry",
+    "get_ir_reciprocal_mesh",
+    # "get_layergroup",
+    "get_magnetic_spacegroup_type",
+    "get_magnetic_spacegroup_type_from_symmetry",
+    "get_magnetic_symmetry",
+    "get_magnetic_symmetry_dataset",
+    "get_magnetic_symmetry_from_database",
+    # "get_pointgroup",
+    "get_spacegroup",
+    "get_spacegroup_type",
+    "get_spacegroup_type_from_symmetry",
+    # "get_stabilized_reciprocal_mesh",
+    "get_symmetry",
+    "get_symmetry_dataset",
+    "get_symmetry_from_database",
+    "get_version",
+    "niggli_reduce",
+    "refine_cell",
+    # "relocate_BZ_grid_address",
+    # "spg_get_commit",
+    # "spg_get_version",
+    "spg_get_version_full",
+    "standardize_cell",
+]
+
 warnings.filterwarnings(
     "module", category=DeprecationWarning, message=r"dict interface.*"
 )
@@ -453,6 +490,7 @@ def spg_get_version() -> str:
     """Get the X.Y.Z version of the detected spglib C library.
 
     .. versionadded:: 2.3.0
+
     :return: version string
     """
     _set_no_error()
@@ -463,6 +501,7 @@ def spg_get_version_full() -> str:
     """Get the full version of the detected spglib C library.
 
     .. versionadded:: 2.3.0
+
     :return: full version string
     """
     _set_no_error()
@@ -473,6 +512,7 @@ def spg_get_commit() -> str:
     """Get the commit of the detected spglib C library.
 
     .. versionadded:: 2.3.0
+
     :return: commit string
     """
     _set_no_error()
@@ -1873,8 +1913,6 @@ def relocate_BZ_grid_address(
 
     Number of ir-grid-points inside Brillouin zone is returned.
     It is assumed that the following arrays have the shapes of
-        bz_grid_address : (num_grid_points_in_FBZ, 3)
-        bz_map (prod(mesh * 2), )
 
     Note that the shape of grid_address is (prod(mesh), 3) and the
     addresses in grid_address are arranged to be in parallelepiped
