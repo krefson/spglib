@@ -127,10 +127,10 @@ class TestSpglib(unittest.TestCase):
 
             # This is for writing out detailed symmetry info into files.
             # Now it is only for Wyckoff positions.
-            # with open(reffname, 'w') as f:
+            # with open(reffname, "w") as f:
             #     f.write("wyckoffs:\n")
-            #     for w in dataset['wyckoffs']:
-            #         f.write("- \"%s\"\n" % w)
+            #     for w in dataset.wyckoffs:
+            #         f.write('- "%s"\n' % w)
 
     def test_standardize_cell_and_pointgroup(self):
         for fname, spgnum in zip(self._filenames, self._spgnum_ref):
