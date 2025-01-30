@@ -1,4 +1,4 @@
-from spglib import __version__ as version
+import importlib.metadata
 
 project = "Spglib"
 copyright = "2009, Atsushi Togo"
@@ -6,11 +6,14 @@ copyright = "2009, Atsushi Togo"
 extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
+    "sphinx.ext.autodoc",
+    "sphinx_autodoc_typehints",
     "sphinxcontrib.bibtex",
     "myst_parser",
-    "autodoc2",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
+    "sphinx.ext.intersphinx",
+    "sphinx_tippy",
 ]
 
 exclude_patterns = [
@@ -52,7 +55,7 @@ bibtex_default_style = "unsrt"
 # -----------------------------------------------------------------------------
 
 html_theme = "sphinx_book_theme"
-html_title = f"Spglib v{version}"
+html_title = f"Spglib v{importlib.metadata.version('spglib')}"
 html_theme_options = {
     # https://sphinx-book-theme.readthedocs.io/en/latest/reference.html
     "repository_url": "https://github.com/spglib/spglib",
@@ -62,34 +65,6 @@ html_theme_options = {
     "show_toc_level": 3,
 }
 html_static_path = ["_static"]
-
-# -----------------------------------------------------------------------------
-# Autodoc2
-# -----------------------------------------------------------------------------
-autodoc2_output_dir = "api/python-api"
-autodoc2_render_plugin = "myst"
-autodoc2_docstring_parser_regexes = [
-    (r".*", "rst"),
-]
-autodoc2_annotations = False
-autodoc2_packages = [
-    {
-        "path": "../python/spglib",
-    },
-]
-autodoc2_hidden_objects = ["dunder", "private", "inherited"]
-autodoc2_hidden_regexes = [
-    "spglib.spglib.get_pointgroup",
-    # Layer group
-    "spglib.spglib.get_layergroup",
-    "spglib.spglib.get_symmetry_layerdataset",
-    # Kpoints
-    "spglib.spglib.get_grid_point_from_address",
-    "spglib.spglib.get_stabilized_reciprocal_mesh",
-    "spglib.spglib.get_grid_points_by_rotations",
-    "spglib.spglib.get_BZ_grid_points_by_rotations",
-    "spglib.spglib.relocate_BZ_grid_address",
-]
 
 # -----------------------------------------------------------------------------
 # linkcheck
@@ -125,3 +100,18 @@ extlinks = {
     "path": ("https://github.com/spglib/spglib/tree/develop/%s", "%s"),
     "user": ("https://github.com/%s", "%s"),
 }
+
+# -----------------------------------------------------------------------------
+# intersphinx and tippy
+# -----------------------------------------------------------------------------
+
+intersphinx_mapping = {
+    "cmake": ("https://cmake.org/cmake/help/latest", None),
+    "scikit": ("https://scikit-build-core.readthedocs.io/en/latest/", None),
+}
+
+tippy_rtd_urls = [
+    # Only works with RTD hosted intersphinx
+    # "https://cmake.org/cmake/help/latest",
+    "https://scikit-build-core.readthedocs.io/en/latest/",
+]
