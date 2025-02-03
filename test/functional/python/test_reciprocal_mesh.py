@@ -1,12 +1,9 @@
-import os
+import pathlib
 import unittest
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 
 import numpy as np
+from load_yaml_cell import get_cell
 from spglib import (
     get_BZ_grid_points_by_rotations,
     get_grid_point_from_address,
@@ -16,9 +13,8 @@ from spglib import (
     get_symmetry_dataset,
     relocate_BZ_grid_address,
 )
-from vasp import read_vasp
 
-data_dir = os.path.dirname(os.path.abspath(__file__))
+cwd = pathlib.Path(__file__).parent
 
 result_ir_rec_mesh = (
     """   0    0   0   0
@@ -623,9 +619,9 @@ class TestReciprocalMesh(unittest.TestCase):
     def setUp(self):
         identity = np.eye(3, dtype="intc")
         file_and_mesh = (
-            [os.path.join(data_dir, "data", "cubic", "POSCAR-225"), [4, 4, 4]],
-            [os.path.join(data_dir, "data", "hexagonal", "POSCAR-186"), [4, 4, 2]],
-            [os.path.join(data_dir, "POSCAR_Si_prim"), [3, 3, 3]],
+            [cwd / "data/cubic/unitcell_225.yaml.xz", [4, 4, 4]],
+            [cwd / "data/hexagonal/unitcell_186.yaml.xz", [4, 4, 2]],
+            [cwd / "si_prim.yaml.xz", [3, 3, 3]],
         )
 
         self.meshes = []
@@ -634,7 +630,7 @@ class TestReciprocalMesh(unittest.TestCase):
         self.grid_addresses = []
         for i, (fname, mesh) in enumerate(file_and_mesh):
             self.meshes.append(mesh)
-            self.cells.append(read_vasp(fname))
+            self.cells.append(get_cell(fname))
             self.rotations.append(get_symmetry_dataset(self.cells[i]).rotations)
             _, ga = get_stabilized_reciprocal_mesh(
                 mesh,

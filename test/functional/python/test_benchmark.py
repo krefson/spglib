@@ -1,21 +1,26 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Callable
+import pathlib
 
 import pytest
+from load_yaml_cell import get_cell
 from spglib import get_symmetry_dataset
+
+cwd = pathlib.Path(__file__).parent
 
 
 @pytest.mark.benchmark(group="space-group")
 def test_get_symmetry_dataset(
     benchmark,
-    all_filenames: list[Path],
-    read_vasp: Callable,
+    dirnames: list[str],
 ):
     """Benchmarking get_symmetry_dataset on all structures under test/data."""
-    # Load all cells beforehand
-    cells = [read_vasp(fname) for fname in all_filenames]
+    cells = []
+    for d in dirnames:
+        dirname = cwd / "data" / d
+        for fname in dirname.iterdir():
+            cells.append(get_cell(fname))
+
     print(f"Benchmark get_symmetry_dataset on {len(cells)} structures")
 
     def _get_symmetry_dataset_for_cells():

@@ -1,8 +1,10 @@
 import os
+import pathlib
 import unittest
 
 import numpy as np
 import yaml
+from load_yaml_cell import get_cell
 from spglib import (
     MagneticSpaceGroupType,
     find_primitive,
@@ -14,21 +16,8 @@ from spglib import (
     get_symmetry_dataset,
     standardize_cell,
 )
-from vasp import read_vasp
 
-data_dir = os.path.dirname(os.path.abspath(__file__))
-
-dirnames = (
-    "cubic",
-    "hexagonal",
-    # "monoclinic",
-    # "orthorhombic",
-    # "tetragonal",
-    # "triclinic",
-    # "trigonal",
-    # "distorted",
-    # "virtual_structure",
-)
+cwd = pathlib.Path(__file__).parent
 
 # fmt: off
 spg_to_hall = [
@@ -57,6 +46,16 @@ spg_to_hall = [
     517, 518, 520, 521, 523, 524, 525, 527, 529, 530, 531]
 # fmt: on
 
+dirnames = (
+    "cubic",
+    "hexagonal",
+    "monoclinic",
+    "orthorhombic",
+    "tetragonal",
+    "triclinic",
+    "trigonal",
+)
+
 
 class TestSpglib(unittest.TestCase):
     def setUp(self):
@@ -64,14 +63,14 @@ class TestSpglib(unittest.TestCase):
         self._ref_filenames = []
         self._spgnum_ref = []
         for d in dirnames:
-            dirname = os.path.join(data_dir, "data", d)
-            refdirname = os.path.join(data_dir, "ref", d)
+            dirname = cwd / "data" / d
+            refdirname = cwd / "ref" / d
             filenames = os.listdir(dirname)
-            self._spgnum_ref += [int(fname.split("-")[1]) for fname in filenames]
-            self._filenames += [os.path.join(dirname, fname) for fname in filenames]
-            self._ref_filenames += [
-                os.path.join(refdirname, fname + "-ref") for fname in filenames
+            self._spgnum_ref += [
+                int(fname.split(".")[0].split("_")[1]) for fname in filenames
             ]
+            self._filenames += [dirname / fname for fname in filenames]
+            self._ref_filenames += [refdirname / f"{fname}-ref" for fname in filenames]
 
     def _create_symref(self):
         pass
@@ -85,12 +84,8 @@ class TestSpglib(unittest.TestCase):
             self._spgnum_ref,
             self._ref_filenames,
         ):
-            cell = read_vasp(fname)
-
-            if "distorted" in fname:
-                symprec = 1e-1
-            else:
-                symprec = 1e-5
+            cell = get_cell(fname)
+            symprec = 1e-5
             dataset = get_symmetry_dataset(cell, symprec=symprec)
             self.assertEqual(dataset.number, spgnum, msg=("%s" % fname))
 
@@ -134,12 +129,8 @@ class TestSpglib(unittest.TestCase):
 
     def test_standardize_cell_and_pointgroup(self):
         for fname, spgnum in zip(self._filenames, self._spgnum_ref):
-            cell = read_vasp(fname)
-            if "distorted" in fname:
-                symprec = 1e-1
-            else:
-                symprec = 1e-5
-
+            cell = get_cell(fname)
+            symprec = 1e-5
             std_cell = standardize_cell(
                 cell,
                 to_primitive=False,
@@ -155,12 +146,8 @@ class TestSpglib(unittest.TestCase):
 
     def test_standardize_cell_from_primitive(self):
         for fname, spgnum in zip(self._filenames, self._spgnum_ref):
-            cell = read_vasp(fname)
-            if "distorted" in fname:
-                symprec = 1e-1
-            else:
-                symprec = 1e-5
-
+            cell = get_cell(fname)
+            symprec = 1e-5
             prim_cell = standardize_cell(
                 cell,
                 to_primitive=True,
@@ -178,12 +165,8 @@ class TestSpglib(unittest.TestCase):
 
     def test_standardize_cell_to_primitive(self):
         for fname, spgnum in zip(self._filenames, self._spgnum_ref):
-            cell = read_vasp(fname)
-            if "distorted" in fname:
-                symprec = 1e-1
-            else:
-                symprec = 1e-5
-
+            cell = get_cell(fname)
+            symprec = 1e-5
             prim_cell = standardize_cell(
                 cell,
                 to_primitive=True,
@@ -195,11 +178,8 @@ class TestSpglib(unittest.TestCase):
 
     def test_refine_cell(self):
         for fname, spgnum in zip(self._filenames, self._spgnum_ref):
-            cell = read_vasp(fname)
-            if "distorted" in fname:
-                dataset_0 = get_symmetry_dataset(cell, symprec=1e-1)
-            else:
-                dataset_0 = get_symmetry_dataset(cell, symprec=1e-5)
+            cell = get_cell(fname)
+            dataset_0 = get_symmetry_dataset(cell, symprec=1e-5)
             ref_cell_0 = (
                 dataset_0.std_lattice,
                 dataset_0.std_positions,
@@ -213,14 +193,13 @@ class TestSpglib(unittest.TestCase):
             # standardization again, i.e., examining non cycling behaviour.
             # Currently only for orthorhombic.
             if (
-                "cubic" in fname
-                or "hexagonal" in fname
-                or "monoclinic" in fname
-                or "orthorhombic" in fname
-                or "tetragonal" in fname
-                or "triclinic" in fname
-                or "trigonal" in fname
-                or "distorted" in fname
+                "cubic" in str(fname)
+                or "hexagonal" in str(fname)
+                or "monoclinic" in str(fname)
+                or "orthorhombic" in str(fname)
+                or "tetragonal" in str(fname)
+                or "triclinic" in str(fname)
+                or "trigonal" in str(fname)
             ):
                 ref_cell_1 = (
                     dataset_1.std_lattice,
@@ -263,12 +242,8 @@ class TestSpglib(unittest.TestCase):
 
     def test_find_primitive(self):
         for fname in self._filenames:
-            cell = read_vasp(fname)
-            if "distorted" in fname:
-                symprec = 1e-1
-            else:
-                symprec = 1e-5
-
+            cell = get_cell(fname)
+            symprec = 1e-5
             dataset = get_symmetry_dataset(cell, symprec=symprec)
             primitive = find_primitive(cell, symprec=symprec)
 
