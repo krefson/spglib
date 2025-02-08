@@ -57,7 +57,7 @@ typedef struct {
     double *lattice;
 } NiggliParams;
 
-static int get_num_attempts();
+static int get_num_attempts(void);
 static NiggliParams *initialize(double const *lattice_, double const eps_);
 static void finalize(double *lattice_, NiggliParams *p);
 static int reset(NiggliParams *p);
@@ -94,7 +94,7 @@ static inline void debug_show(int j, NiggliParams const *p) {
     // }
 }
 
-int get_num_attempts() {
+int get_num_attempts(void) {
     char const *num_attempts_str = getenv("SPGLIB_NUM_ATTEMPTS");
     if (num_attempts_str != NULL) {
         // Try to parse the string as an integer
