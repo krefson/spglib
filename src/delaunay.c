@@ -44,7 +44,7 @@
 
 #define ZERO_PREC 1e-10
 
-static int get_num_attempts();
+static int get_num_attempts(void);
 
 static int delaunay_reduce(double red_lattice[3][3], double const lattice[3][3],
                            int const aperiodic_axis, double const symprec);
@@ -64,7 +64,7 @@ static void get_delaunay_shortest_vectors_2D(double basis[3][3],
 static void get_extended_basis_2D(double basis[3][3],
                                   double const lattice[3][2]);
 
-int get_num_attempts() {
+int get_num_attempts(void) {
     char const *num_attempts_str = getenv("SPGLIB_NUM_ATTEMPTS");
     if (num_attempts_str != NULL) {
         // Try to parse the string as an integer

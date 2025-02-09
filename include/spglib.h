@@ -223,12 +223,12 @@ typedef struct {
     int type;
 } SpglibMagneticSpacegroupType;
 
-SPG_API const char *spg_get_version();
-SPG_API const char *spg_get_version_full();
-SPG_API const char *spg_get_commit();
-SPG_API int spg_get_major_version();
-SPG_API int spg_get_minor_version();
-SPG_API int spg_get_micro_version();
+SPG_API const char *spg_get_version(void);
+SPG_API const char *spg_get_version_full(void);
+SPG_API const char *spg_get_commit(void);
+SPG_API int spg_get_major_version(void);
+SPG_API int spg_get_minor_version(void);
+SPG_API int spg_get_micro_version(void);
 
 SPG_API SpglibError spg_get_error_code(void);
 SPG_API char *spg_get_error_message(SpglibError spglib_error);

@@ -40,7 +40,7 @@
 
 #include "debug.h"
 
-bool debug_enabled() {
+bool debug_enabled(void) {
     char const* debug_env = getenv("SPGLIB_DEBUG");
     // If SPGLIB_DEBUG is not defined, do not output any debug info
     if (debug_env == NULL) return false;
@@ -48,7 +48,7 @@ bool debug_enabled() {
     // it is defined, including SPGLIB_DEBUG=""
     return true;
 }
-bool warning_enabled() {
+bool warning_enabled(void) {
     char const* warning_env = getenv("SPGLIB_WARNING");
     // If SPGLIB_WARNING is not defined assume warning is on
     if (warning_env == NULL) return true;
@@ -58,7 +58,7 @@ bool warning_enabled() {
     // Otherwise assume it's an ill-defined value and ignore it
     return true;
 }
-bool info_enabled() {
+bool info_enabled(void) {
     char const* info_env = getenv("SPGLIB_INFO");
     // If SPGLIB_INFO is not defined, do not output any info messages
     if (info_env == NULL) return false;
