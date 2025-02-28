@@ -9,8 +9,8 @@ files_to_sync:
       - "protect sources"
       - "protect changelog"
       - "protect gating.yaml"
-      - "- plans/rpminspect.fmf"
-      - "- plans/rpmlint.fmf"
+      # Temporary fix for
+      - "- *.spec"
   - .packit.yaml
 
 upstream_package_name: spglib
@@ -18,10 +18,10 @@ downstream_package_name: spglib
 upstream_tag_template: v{version}
 
 targets:
-  - fedora-all-x86_64
-  - fedora-all-aarch64
-  - epel-9-x86_64
-  - epel-9-aarch64
+  - fedora-development-x86_64
+  - fedora-development-aarch64
+  - epel-10-x86_64
+  - epel-10-aarch64
 
 _:
   - &build_in_packit
