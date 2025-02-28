@@ -1,81 +1,13 @@
-import io
-import unittest
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-from load_yaml_cell import get_cell
 from spglib import get_symmetry
 
-Al222 = """unitcell:
-  lattice:
-  - [     8.000000000000000,     0.000000000000000,     0.000000000000000 ] # a
-  - [     0.000000000000000,     8.000000000000000,     0.000000000000000 ] # b
-  - [     0.000000000000000,     0.000000000000000,     8.000000000000000 ] # c
-  points:
-  - number: 1 # 1
-    coordinates: [  0.000000000000000,  0.000000000000000,  0.000000000000000 ]
-  - number: 1 # 2
-    coordinates: [  0.500000000000000,  0.000000000000000,  0.000000000000000 ]
-  - number: 1 # 3
-    coordinates: [  0.000000000000000,  0.500000000000000,  0.000000000000000 ]
-  - number: 1 # 4
-    coordinates: [  0.500000000000000,  0.500000000000000,  0.000000000000000 ]
-  - number: 1 # 5
-    coordinates: [  0.000000000000000,  0.000000000000000,  0.500000000000000 ]
-  - number: 1 # 6
-    coordinates: [  0.500000000000000,  0.000000000000000,  0.500000000000000 ]
-  - number: 1 # 7
-    coordinates: [  0.000000000000000,  0.500000000000000,  0.500000000000000 ]
-  - number: 1 # 8
-    coordinates: [  0.500000000000000,  0.500000000000000,  0.500000000000000 ]
-  - number: 1 # 9
-    coordinates: [  0.000000000000000,  0.250000000000000,  0.250000000000000 ]
-  - number: 1 # 10
-    coordinates: [  0.500000000000000,  0.250000000000000,  0.250000000000000 ]
-  - number: 1 # 11
-    coordinates: [  0.000000000000000,  0.750000000000000,  0.250000000000000 ]
-  - number: 1 # 12
-    coordinates: [  0.500000000000000,  0.750000000000000,  0.250000000000000 ]
-  - number: 1 # 13
-    coordinates: [  0.000000000000000,  0.250000000000000,  0.750000000000000 ]
-  - number: 1 # 14
-    coordinates: [  0.500000000000000,  0.250000000000000,  0.750000000000000 ]
-  - number: 1 # 15
-    coordinates: [  0.000000000000000,  0.750000000000000,  0.750000000000000 ]
-  - number: 1 # 16
-    coordinates: [  0.500000000000000,  0.750000000000000,  0.750000000000000 ]
-  - number: 1 # 17
-    coordinates: [  0.250000000000000,  0.000000000000000,  0.250000000000000 ]
-  - number: 1 # 18
-    coordinates: [  0.750000000000000,  0.000000000000000,  0.250000000000000 ]
-  - number: 1 # 19
-    coordinates: [  0.250000000000000,  0.500000000000000,  0.250000000000000 ]
-  - number: 1 # 20
-    coordinates: [  0.750000000000000,  0.500000000000000,  0.250000000000000 ]
-  - number: 1 # 21
-    coordinates: [  0.250000000000000,  0.000000000000000,  0.750000000000000 ]
-  - number: 1 # 22
-    coordinates: [  0.750000000000000,  0.000000000000000,  0.750000000000000 ]
-  - number: 1 # 23
-    coordinates: [  0.250000000000000,  0.500000000000000,  0.750000000000000 ]
-  - number: 1 # 24
-    coordinates: [  0.750000000000000,  0.500000000000000,  0.750000000000000 ]
-  - number: 1 # 25
-    coordinates: [  0.250000000000000,  0.250000000000000,  0.000000000000000 ]
-  - number: 1 # 26
-    coordinates: [  0.750000000000000,  0.250000000000000,  0.000000000000000 ]
-  - number: 1 # 27
-    coordinates: [  0.250000000000000,  0.750000000000000,  0.000000000000000 ]
-  - number: 1 # 28
-    coordinates: [  0.750000000000000,  0.750000000000000,  0.000000000000000 ]
-  - number: 1 # 29
-    coordinates: [  0.250000000000000,  0.250000000000000,  0.500000000000000 ]
-  - number: 1 # 30
-    coordinates: [  0.750000000000000,  0.250000000000000,  0.500000000000000 ]
-  - number: 1 # 31
-    coordinates: [  0.250000000000000,  0.750000000000000,  0.500000000000000 ]
-  - number: 1 # 32
-    coordinates: [  0.750000000000000,  0.750000000000000,  0.500000000000000 ]"""
+if TYPE_CHECKING:
+    from conftest import CrystalData
 
+# TODO: Move this to static list
 sym_ops_str = """ 1  0  0  0  1  0  0  0  1    0.0000000    0.0000000    0.0000000
 -1  0  0  0 -1  0  0  0 -1    0.0000000    0.0000000    0.0000000
  0  0 -1  0  1  0  1  0  0    0.0000000    0.0000000    0.0000000
@@ -1614,43 +1546,32 @@ sym_ops_str = """ 1  0  0  0  1  0  0  0  1    0.0000000    0.0000000    0.00000
 -1  0  0  0  0 -1  0  1  0    0.7500000    0.5000000    0.2500000"""
 
 
-class TestPureTrans(unittest.TestCase):
+def test_pure_trans(get_crystal_data):
     """Test for new implementation of search_pure_translations in
     symmetry.c (ee97ad17) against a previous version. The order of
     symmetry operations found by this new implementation may be
     different from that obtained by the older version but the set must
     be the same in rotations and very close in translations.
     """
+    Al222_file = Path(__file__).parent / "Al222.yaml"
+    crystal_data: CrystalData = get_crystal_data(Al222_file)
+    sym_ops = get_symmetry(crystal_data.cell)
 
-    def setUp(self):
-        cell = get_cell(io.StringIO(Al222))
-        self._sym_ops = get_symmetry(cell)
-        rot = []
-        trans = []
-        for i, line in enumerate(sym_ops_str.split("\n")):
-            arr = line.split()
-            rot += [int(x) for x in arr[:9]]
-            trans += [float(x) for x in arr[9:]]
-        self._rot_ref = np.reshape(rot, (-1, 3, 3))
-        self._trans_ref = np.reshape(trans, (-1, 3))
+    rot_ref = []
+    trans_ref = []
+    for i, line in enumerate(sym_ops_str.split("\n")):
+        arr = line.split()
+        rot_ref += [int(x) for x in arr[:9]]
+        trans_ref += [float(x) for x in arr[9:]]
+    rot_ref = np.reshape(rot_ref, (-1, 3, 3))
+    trans_ref = np.reshape(trans_ref, (-1, 3))
+    nums = []
+    for i, (r, t) in enumerate(
+        zip(sym_ops["rotations"], sym_ops["translations"]),
+    ):
+        for j, (rr, tr) in enumerate(zip(rot_ref, trans_ref)):
+            if (r == rr).all() and (np.abs(t - tr) < 1e-5).all():
+                nums.append(j)
+                break
 
-    def tearDown(self):
-        pass
-
-    def test_pure_trans(self):
-        nums = []
-        for i, (r, t) in enumerate(
-            zip(self._sym_ops["rotations"], self._sym_ops["translations"]),
-        ):
-            for j, (rr, tr) in enumerate(zip(self._rot_ref, self._trans_ref)):
-                if (r == rr).all() and (np.abs(t - tr) < 1e-5).all():
-                    nums.append(j)
-                    break
-
-        np.testing.assert_array_equal(np.sort(nums), np.arange(len(self._rot_ref)))
-
-
-if __name__ == "__main__":
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestPureTrans)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-    # unittest.main()
+    np.testing.assert_array_equal(np.sort(nums), np.arange(len(rot_ref)))

@@ -1,30 +1,24 @@
 from __future__ import annotations
 
-import pathlib
+from typing import TYPE_CHECKING
 
 import pytest
-from load_yaml_cell import get_cell
 from spglib import get_symmetry_dataset
 
-cwd = pathlib.Path(__file__).parent
+if TYPE_CHECKING:
+    from conftest import CrystalData
 
 
 @pytest.mark.benchmark(group="space-group")
 def test_get_symmetry_dataset(
     benchmark,
-    dirnames: list[str],
+    crystal_data: CrystalData,
 ):
     """Benchmarking get_symmetry_dataset on all structures under test/data."""
-    cells = []
-    for d in dirnames:
-        dirname = cwd / "data" / d
-        for fname in dirname.iterdir():
-            cells.append(get_cell(fname))
-
-    print(f"Benchmark get_symmetry_dataset on {len(cells)} structures")
+    # TODO: This benchmarks individual crystal data. Is it useful?
+    print(f"Benchmark get_symmetry_dataset on {crystal_data.name} structures")
 
     def _get_symmetry_dataset_for_cells():
-        for cell in cells:
-            _ = get_symmetry_dataset(cell, symprec=1e-5)
+        _ = get_symmetry_dataset(crystal_data.cell, symprec=1e-5)
 
     benchmark.pedantic(_get_symmetry_dataset_for_cells, rounds=4)

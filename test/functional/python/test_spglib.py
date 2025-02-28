@@ -1,10 +1,9 @@
-import os
+from __future__ import annotations
+
 import pathlib
-import unittest
+from typing import TYPE_CHECKING
 
 import numpy as np
-import yaml
-from load_yaml_cell import get_cell
 from spglib import (
     MagneticSpaceGroupType,
     find_primitive,
@@ -17,7 +16,8 @@ from spglib import (
     standardize_cell,
 )
 
-cwd = pathlib.Path(__file__).parent
+if TYPE_CHECKING:
+    from conftest import CrystalData
 
 # fmt: off
 spg_to_hall = [
@@ -46,337 +46,266 @@ spg_to_hall = [
     517, 518, 520, 521, 523, 524, 525, 527, 529, 530, 531]
 # fmt: on
 
-dirnames = (
-    "cubic",
-    "hexagonal",
-    "monoclinic",
-    "orthorhombic",
-    "tetragonal",
-    "triclinic",
-    "trigonal",
-)
+
+def get_spgnum(name: str) -> int:
+    """Get number reference from filename."""
+    file_name = pathlib.Path(name).stem
+    spgnum = int(file_name.split("_")[1])
+    return spgnum
 
 
-class TestSpglib(unittest.TestCase):
-    def setUp(self):
-        self._filenames = []
-        self._ref_filenames = []
-        self._spgnum_ref = []
-        for d in dirnames:
-            dirname = cwd / "data" / d
-            refdirname = cwd / "ref" / d
-            filenames = os.listdir(dirname)
-            self._spgnum_ref += [
-                int(fname.split(".")[0].split("_")[1]) for fname in filenames
-            ]
-            self._filenames += [dirname / fname for fname in filenames]
-            self._ref_filenames += [refdirname / f"{fname}-ref" for fname in filenames]
+def test_get_symmetry_dataset(crystal_data: CrystalData):
+    symprec = 1e-5
+    dataset = get_symmetry_dataset(crystal_data.cell, symprec=symprec)
+    spgnum = get_spgnum(crystal_data.name)
+    assert dataset.number == spgnum
 
-    def _create_symref(self):
-        pass
+    for i in range(spg_to_hall[spgnum - 1], spg_to_hall[spgnum]):
+        dataset = get_symmetry_dataset(
+            crystal_data.cell, hall_number=i, symprec=symprec
+        )
+        assert dataset.hall_number, i
+        spg_type = get_spacegroup_type(dataset.hall_number)
+        assert dataset.international == spg_type.international_short
+        assert dataset.hall == spg_type.hall_symbol
+        assert dataset.choice == spg_type.choice
+        assert dataset.pointgroup == spg_type.pointgroup_international
 
-    def tearDown(self):
-        pass
+    wyckoffs = dataset.wyckoffs
+    assert wyckoffs == crystal_data.ref["wyckoffs"]
 
-    def test_get_symmetry_dataset(self):
-        for fname, spgnum, reffname in zip(
-            self._filenames,
-            self._spgnum_ref,
-            self._ref_filenames,
-        ):
-            cell = get_cell(fname)
-            symprec = 1e-5
-            dataset = get_symmetry_dataset(cell, symprec=symprec)
-            self.assertEqual(dataset.number, spgnum, msg=("%s" % fname))
 
-            for i in range(spg_to_hall[spgnum - 1], spg_to_hall[spgnum]):
-                dataset = get_symmetry_dataset(cell, hall_number=i, symprec=symprec)
-                self.assertEqual(dataset.hall_number, i, msg=("%s" % fname))
-                spg_type = get_spacegroup_type(dataset.hall_number)
-                self.assertEqual(
-                    dataset.international,
-                    spg_type.international_short,
-                    msg=("%s" % fname),
-                )
-                self.assertEqual(
-                    dataset.hall,
-                    spg_type.hall_symbol,
-                    msg=("%s" % fname),
-                )
-                self.assertEqual(
-                    dataset.choice,
-                    spg_type.choice,
-                    msg=("%s" % fname),
-                )
-                self.assertEqual(
-                    dataset.pointgroup,
-                    spg_type.pointgroup_international,
-                    msg=("%s" % fname),
-                )
+def test_standardize_cell_and_pointgroup(crystal_data: CrystalData):
+    spgnum = get_spgnum(crystal_data.name)
+    symprec = 1e-5
+    std_cell = standardize_cell(
+        crystal_data.cell,
+        to_primitive=False,
+        no_idealize=True,
+        symprec=symprec,
+    )
+    dataset = get_symmetry_dataset(std_cell, symprec=symprec)
+    assert dataset.number == spgnum
 
-            wyckoffs = dataset.wyckoffs
-            with open(reffname) as f:
-                wyckoffs_ref = yaml.load(f, Loader=yaml.FullLoader)["wyckoffs"]
-            for w, w_ref in zip(wyckoffs, wyckoffs_ref):
-                self.assertEqual(w, w_ref, msg=("%s" % fname))
+    # The test for point group has to be done after standardization.
+    ptg_symbol, _, _ = get_pointgroup(dataset.rotations)
+    assert dataset.pointgroup == ptg_symbol
 
-            # This is for writing out detailed symmetry info into files.
-            # Now it is only for Wyckoff positions.
-            # with open(reffname, "w") as f:
-            #     f.write("wyckoffs:\n")
-            #     for w in dataset.wyckoffs:
-            #         f.write('- "%s"\n' % w)
 
-    def test_standardize_cell_and_pointgroup(self):
-        for fname, spgnum in zip(self._filenames, self._spgnum_ref):
-            cell = get_cell(fname)
-            symprec = 1e-5
-            std_cell = standardize_cell(
-                cell,
-                to_primitive=False,
-                no_idealize=True,
-                symprec=symprec,
-            )
-            dataset = get_symmetry_dataset(std_cell, symprec=symprec)
-            self.assertEqual(dataset.number, spgnum, msg=("%s" % fname))
+def test_standardize_cell_from_primitive(crystal_data: CrystalData):
+    spgnum = get_spgnum(crystal_data.name)
+    symprec = 1e-5
+    prim_cell = standardize_cell(
+        crystal_data.cell,
+        to_primitive=True,
+        no_idealize=True,
+        symprec=symprec,
+    )
+    std_cell = standardize_cell(
+        prim_cell,
+        to_primitive=False,
+        no_idealize=True,
+        symprec=symprec,
+    )
+    dataset = get_symmetry_dataset(std_cell, symprec=symprec)
+    assert dataset.number == spgnum
 
-            # The test for point group has to be done after standardization.
-            ptg_symbol, _, _ = get_pointgroup(dataset.rotations)
-            self.assertEqual(dataset.pointgroup, ptg_symbol, msg=("%s" % fname))
 
-    def test_standardize_cell_from_primitive(self):
-        for fname, spgnum in zip(self._filenames, self._spgnum_ref):
-            cell = get_cell(fname)
-            symprec = 1e-5
-            prim_cell = standardize_cell(
-                cell,
-                to_primitive=True,
-                no_idealize=True,
-                symprec=symprec,
-            )
-            std_cell = standardize_cell(
-                prim_cell,
-                to_primitive=False,
-                no_idealize=True,
-                symprec=symprec,
-            )
-            dataset = get_symmetry_dataset(std_cell, symprec=symprec)
-            self.assertEqual(dataset.number, spgnum, msg=("%s" % fname))
+def test_standardize_cell_to_primitive(crystal_data: CrystalData):
+    spgnum = get_spgnum(crystal_data.name)
+    symprec = 1e-5
+    prim_cell = standardize_cell(
+        crystal_data.cell,
+        to_primitive=True,
+        no_idealize=True,
+        symprec=symprec,
+    )
+    dataset = get_symmetry_dataset(prim_cell, symprec=symprec)
+    assert dataset.number == spgnum
 
-    def test_standardize_cell_to_primitive(self):
-        for fname, spgnum in zip(self._filenames, self._spgnum_ref):
-            cell = get_cell(fname)
-            symprec = 1e-5
-            prim_cell = standardize_cell(
-                cell,
-                to_primitive=True,
-                no_idealize=True,
-                symprec=symprec,
-            )
-            dataset = get_symmetry_dataset(prim_cell, symprec=symprec)
-            self.assertEqual(dataset.number, spgnum, msg=("%s" % fname))
 
-    def test_refine_cell(self):
-        for fname, spgnum in zip(self._filenames, self._spgnum_ref):
-            cell = get_cell(fname)
-            dataset_0 = get_symmetry_dataset(cell, symprec=1e-5)
-            ref_cell_0 = (
-                dataset_0.std_lattice,
-                dataset_0.std_positions,
-                dataset_0.std_types,
-            )
-            dataset_1 = get_symmetry_dataset(ref_cell_0, symprec=1e-5)
-            # Check the same space group type is found.
-            self.assertEqual(dataset_1.number, spgnum, msg=("%s" % fname))
+def test_refine_cell(crystal_data: CrystalData):
+    spgnum = get_spgnum(crystal_data.name)
+    dataset_0 = get_symmetry_dataset(crystal_data.cell, symprec=1e-5)
+    ref_cell_0 = (
+        dataset_0.std_lattice,
+        dataset_0.std_positions,
+        dataset_0.std_types,
+    )
+    dataset_1 = get_symmetry_dataset(ref_cell_0, symprec=1e-5)
+    # Check the same space group type is found.
+    assert dataset_1.number == spgnum
 
-            # Check if the same structure is obtained when applying
-            # standardization again, i.e., examining non cycling behaviour.
-            # Currently only for orthorhombic.
-            if (
-                "cubic" in str(fname)
-                or "hexagonal" in str(fname)
-                or "monoclinic" in str(fname)
-                or "orthorhombic" in str(fname)
-                or "tetragonal" in str(fname)
-                or "triclinic" in str(fname)
-                or "trigonal" in str(fname)
-            ):
-                ref_cell_1 = (
-                    dataset_1.std_lattice,
-                    dataset_1.std_positions,
-                    dataset_1.std_types,
-                )
-                dataset_2 = get_symmetry_dataset(ref_cell_1, symprec=1e-5)
-                np.testing.assert_equal(
-                    dataset_1.std_types,
-                    dataset_2.std_types,
-                    err_msg="%s" % fname,
-                )
-                np.testing.assert_allclose(
-                    dataset_1.std_lattice,
-                    dataset_2.std_lattice,
-                    atol=1e-5,
-                    err_msg="%s" % fname,
-                )
-                diff = dataset_1.std_positions - dataset_2.std_positions
-                diff -= np.rint(diff)
-                np.testing.assert_allclose(diff, 0, atol=1e-5, err_msg="%s" % fname)
+    # Check if the same structure is obtained when applying
+    # standardization again, i.e., examining non cycling behaviour.
+    # Currently only for orthorhombic.
 
-    def test_get_spacegroup(self):
-        cell = (
+    ref_cell_1 = (
+        dataset_1.std_lattice,
+        dataset_1.std_positions,
+        dataset_1.std_types,
+    )
+    dataset_2 = get_symmetry_dataset(ref_cell_1, symprec=1e-5)
+    np.testing.assert_equal(
+        dataset_1.std_types,
+        dataset_2.std_types,
+    )
+    np.testing.assert_allclose(
+        dataset_1.std_lattice,
+        dataset_2.std_lattice,
+        atol=1e-5,
+    )
+    diff = dataset_1.std_positions - dataset_2.std_positions
+    diff -= np.rint(diff)
+    np.testing.assert_allclose(diff, 0, atol=1e-5)
+
+
+def test_get_spacegroup():
+    cell = (
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ],
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.5, 0.5],
+            [0.5, 0.0, 0.5],
+            [0.5, 0.5, 0.0],
+        ],
+        [0, 0, 0, 0],
+    )
+    assert get_spacegroup(cell) == "Fm-3m (225)"
+    assert get_spacegroup(cell, symbol_type=1) == "Oh^5 (225)"
+
+
+def test_find_primitive(crystal_data: CrystalData):
+    symprec = 1e-5
+    dataset = get_symmetry_dataset(crystal_data.cell, symprec=symprec)
+    primitive = find_primitive(crystal_data.cell, symprec=symprec)
+
+    spg_type = get_spacegroup_type(dataset.hall_number)
+    c = spg_type.international_short[0]
+    if c in ["A", "B", "C", "I"]:
+        multiplicity = 2
+    elif c == "F":
+        multiplicity = 4
+    elif c == "R":
+        assert spg_type.choice == "H"
+        if spg_type.choice == "H":
+            multiplicity = 3
+        else:  # spg_type['choice'] == 'R'
+            multiplicity = 1
+    else:
+        multiplicity = 1
+    assert len(dataset.std_types) == len(primitive[2]) * multiplicity
+
+
+def test_magnetic_spacegroup_type():
+    # P 3 -2"
+    actual1 = get_magnetic_spacegroup_type(1279)
+    expect1 = MagneticSpaceGroupType(
+        uni_number=1279,
+        litvin_number=1279,
+        bns_number="156.49",
+        og_number="156.1.1279",
+        number=156,
+        type=1,
+    )
+    assert actual1 == expect1
+
+    # -P 2 2ab 1'
+    actual2 = get_magnetic_spacegroup_type(452)
+    expect2 = MagneticSpaceGroupType(
+        uni_number=452,
+        litvin_number=442,
+        bns_number="55.354",
+        og_number="55.2.442",
+        number=55,
+        type=2,
+    )
+    assert actual2 == expect2
+
+    # P 31 2 1c' (0 0 1)
+    actual3 = get_magnetic_spacegroup_type(1262)
+    expect3 = MagneticSpaceGroupType(
+        uni_number=1262,
+        litvin_number=1270,
+        bns_number="151.32",
+        og_number="153.4.1270",
+        number=151,
+        type=4,
+    )
+    assert actual3 == expect3
+
+
+def test_magnetic_symmetry_database():
+    # UNI: R31'_c[R3] (1242), BNS: R_I3 (146.12)
+
+    # Hexagonal axes: hall_number: 433
+    data_h_actual = get_magnetic_symmetry_from_database(1242)
+    for key in ["rotations", "translations", "time_reversals"]:
+        assert len(data_h_actual[key]) == 18
+
+    # Rhombohedral axes: hall_number: 434
+    data_r_actual = get_magnetic_symmetry_from_database(1242, hall_number=434)
+    data_r_expect = {
+        "rotations": np.array(
             [
-                [1.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0],
-                [0.0, 0.0, 1.0],
+                # x,y,z
+                [
+                    [1, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                ],
+                # y,z,x
+                [
+                    [0, 0, 1],
+                    [1, 0, 0],
+                    [0, 1, 0],
+                ],
+                # y+1/2,z+1/2,x+1/2'
+                [
+                    [0, 0, 1],
+                    [1, 0, 0],
+                    [0, 1, 0],
+                ],
+                # z,x,y
+                [
+                    [0, 1, 0],
+                    [0, 0, 1],
+                    [1, 0, 0],
+                ],
+                # x+1/2,y+1/2,z+1/2'
+                [
+                    [1, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                ],
+                # z+1/2,x+1/2,y+1/2'
+                [
+                    [0, 1, 0],
+                    [0, 0, 1],
+                    [1, 0, 0],
+                ],
             ],
+            dtype=np.int32,
+        ),
+        "translations": np.array(
             [
-                [0.0, 0.0, 0.0],
-                [0.0, 0.5, 0.5],
-                [0.5, 0.0, 0.5],
-                [0.5, 0.5, 0.0],
+                [0, 0, 0],
+                [0, 0, 0],
+                [0.5, 0.5, 0.5],
+                [0, 0, 0],
+                [0.5, 0.5, 0.5],
+                [0.5, 0.5, 0.5],
             ],
-            [0, 0, 0, 0],
-        )
-        assert get_spacegroup(cell) == "Fm-3m (225)"
-        assert get_spacegroup(cell, symbol_type=1) == "Oh^5 (225)"
-
-    def test_find_primitive(self):
-        for fname in self._filenames:
-            cell = get_cell(fname)
-            symprec = 1e-5
-            dataset = get_symmetry_dataset(cell, symprec=symprec)
-            primitive = find_primitive(cell, symprec=symprec)
-
-            spg_type = get_spacegroup_type(dataset.hall_number)
-            c = spg_type.international_short[0]
-            if c in ["A", "B", "C", "I"]:
-                multiplicity = 2
-            elif c == "F":
-                multiplicity = 4
-            elif c == "R":
-                self.assertEqual(spg_type.choice, "H")
-                if spg_type.choice == "H":
-                    multiplicity = 3
-                else:  # spg_type['choice'] == 'R'
-                    multiplicity = 1
-            else:
-                multiplicity = 1
-            self.assertEqual(
-                len(dataset.std_types),
-                len(primitive[2]) * multiplicity,
-                msg=("multi: %d, %s" % (multiplicity, fname)),
-            )
-
-    def test_magnetic_spacegroup_type(self):
-        # P 3 -2"
-        actual1 = get_magnetic_spacegroup_type(1279)
-        expect1 = MagneticSpaceGroupType(
-            uni_number=1279,
-            litvin_number=1279,
-            bns_number="156.49",
-            og_number="156.1.1279",
-            number=156,
-            type=1,
-        )
-        assert actual1 == expect1
-
-        # -P 2 2ab 1'
-        actual2 = get_magnetic_spacegroup_type(452)
-        expect2 = MagneticSpaceGroupType(
-            uni_number=452,
-            litvin_number=442,
-            bns_number="55.354",
-            og_number="55.2.442",
-            number=55,
-            type=2,
-        )
-        assert actual2 == expect2
-
-        # P 31 2 1c' (0 0 1)
-        actual3 = get_magnetic_spacegroup_type(1262)
-        expect3 = MagneticSpaceGroupType(
-            uni_number=1262,
-            litvin_number=1270,
-            bns_number="151.32",
-            og_number="153.4.1270",
-            number=151,
-            type=4,
-        )
-        assert actual3 == expect3
-
-    def test_magnetic_symmetry_database(self):
-        # UNI: R31'_c[R3] (1242), BNS: R_I3 (146.12)
-
-        # Hexagonal axes: hall_number: 433
-        data_h_actual = get_magnetic_symmetry_from_database(1242)
-        for key in ["rotations", "translations", "time_reversals"]:
-            assert len(data_h_actual[key]) == 18
-
-        # Rhombohedral axes: hall_number: 434
-        data_r_actual = get_magnetic_symmetry_from_database(1242, hall_number=434)
-        data_r_expect = {
-            "rotations": np.array(
-                [
-                    # x,y,z
-                    [
-                        [1, 0, 0],
-                        [0, 1, 0],
-                        [0, 0, 1],
-                    ],
-                    # y,z,x
-                    [
-                        [0, 0, 1],
-                        [1, 0, 0],
-                        [0, 1, 0],
-                    ],
-                    # y+1/2,z+1/2,x+1/2'
-                    [
-                        [0, 0, 1],
-                        [1, 0, 0],
-                        [0, 1, 0],
-                    ],
-                    # z,x,y
-                    [
-                        [0, 1, 0],
-                        [0, 0, 1],
-                        [1, 0, 0],
-                    ],
-                    # x+1/2,y+1/2,z+1/2'
-                    [
-                        [1, 0, 0],
-                        [0, 1, 0],
-                        [0, 0, 1],
-                    ],
-                    # z+1/2,x+1/2,y+1/2'
-                    [
-                        [0, 1, 0],
-                        [0, 0, 1],
-                        [1, 0, 0],
-                    ],
-                ],
-                dtype=np.int32,
-            ),
-            "translations": np.array(
-                [
-                    [0, 0, 0],
-                    [0, 0, 0],
-                    [0.5, 0.5, 0.5],
-                    [0, 0, 0],
-                    [0.5, 0.5, 0.5],
-                    [0.5, 0.5, 0.5],
-                ],
-            ),
-            "time_reversals": np.array(
-                [
-                    [0, 0, 1, 0, 1, 1],
-                ],
-            ),
-        }
-        for key in ["rotations", "translations", "time_reversals"]:
-            assert np.allclose(data_r_actual[key], data_r_expect[key])
-
-
-if __name__ == "__main__":
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestSpglib)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-    # unittest.main()
+        ),
+        "time_reversals": np.array(
+            [
+                [0, 0, 1, 0, 1, 1],
+            ],
+        ),
+    }
+    for key in ["rotations", "translations", "time_reversals"]:
+        assert np.allclose(data_r_actual[key], data_r_expect[key])
