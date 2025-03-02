@@ -60,7 +60,7 @@ class CrystalData:
         )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def get_crystal_data():
     """Get a single crystal data."""
 
@@ -91,4 +91,4 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
                         id=str(relative_path),
                     )
                 )
-        metafunc.parametrize("crystal_data", all_crystal_data)
+        metafunc.parametrize("crystal_data", all_crystal_data, scope="session")
