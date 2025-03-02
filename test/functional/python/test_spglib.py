@@ -61,15 +61,15 @@ def test_get_symmetry_dataset(crystal_data: CrystalData):
     assert dataset.number == spgnum
 
     for i in range(spg_to_hall[spgnum - 1], spg_to_hall[spgnum]):
-        dataset = get_symmetry_dataset(
+        dataset_with_hall_number = get_symmetry_dataset(
             crystal_data.cell, hall_number=i, symprec=symprec
         )
-        assert dataset.hall_number, i
-        spg_type = get_spacegroup_type(dataset.hall_number)
-        assert dataset.international == spg_type.international_short
-        assert dataset.hall == spg_type.hall_symbol
-        assert dataset.choice == spg_type.choice
-        assert dataset.pointgroup == spg_type.pointgroup_international
+        assert dataset_with_hall_number.hall_number == i
+        spg_type = get_spacegroup_type(dataset_with_hall_number.hall_number)
+        assert dataset_with_hall_number.international == spg_type.international_short
+        assert dataset_with_hall_number.hall == spg_type.hall_symbol
+        assert dataset_with_hall_number.choice == spg_type.choice
+        assert dataset_with_hall_number.pointgroup == spg_type.pointgroup_international
 
     wyckoffs = dataset.wyckoffs
     assert wyckoffs == crystal_data.ref["wyckoffs"]
@@ -124,15 +124,17 @@ def test_standardize_cell_to_primitive(crystal_data: CrystalData):
     assert dataset.number == spgnum
 
 
-def test_refine_cell(crystal_data: CrystalData):
+def test_refine_cell(crystal_data_dataset):
+    crystal_data = crystal_data_dataset["crystal_data"]
+    dataset_0 = crystal_data_dataset["dataset"]
+    symprec = crystal_data_dataset["symprec"]
     spgnum = get_spgnum(crystal_data.name)
-    dataset_0 = get_symmetry_dataset(crystal_data.cell, symprec=1e-5)
     ref_cell_0 = (
         dataset_0.std_lattice,
         dataset_0.std_positions,
         dataset_0.std_types,
     )
-    dataset_1 = get_symmetry_dataset(ref_cell_0, symprec=1e-5)
+    dataset_1 = get_symmetry_dataset(ref_cell_0, symprec=symprec)
     # Check the same space group type is found.
     assert dataset_1.number == spgnum
 
@@ -145,7 +147,7 @@ def test_refine_cell(crystal_data: CrystalData):
         dataset_1.std_positions,
         dataset_1.std_types,
     )
-    dataset_2 = get_symmetry_dataset(ref_cell_1, symprec=1e-5)
+    dataset_2 = get_symmetry_dataset(ref_cell_1, symprec=symprec)
     np.testing.assert_equal(
         dataset_1.std_types,
         dataset_2.std_types,
@@ -153,11 +155,11 @@ def test_refine_cell(crystal_data: CrystalData):
     np.testing.assert_allclose(
         dataset_1.std_lattice,
         dataset_2.std_lattice,
-        atol=1e-5,
+        atol=symprec,
     )
     diff = dataset_1.std_positions - dataset_2.std_positions
     diff -= np.rint(diff)
-    np.testing.assert_allclose(diff, 0, atol=1e-5)
+    np.testing.assert_allclose(diff, 0, atol=symprec)
 
 
 def test_get_spacegroup():
@@ -179,9 +181,10 @@ def test_get_spacegroup():
     assert get_spacegroup(cell, symbol_type=1) == "Oh^5 (225)"
 
 
-def test_find_primitive(crystal_data: CrystalData):
-    symprec = 1e-5
-    dataset = get_symmetry_dataset(crystal_data.cell, symprec=symprec)
+def test_find_primitive(crystal_data_dataset):
+    crystal_data = crystal_data_dataset["crystal_data"]
+    dataset = crystal_data_dataset["dataset"]
+    symprec = crystal_data_dataset["symprec"]
     primitive = find_primitive(crystal_data.cell, symprec=symprec)
 
     spg_type = get_spacegroup_type(dataset.hall_number)

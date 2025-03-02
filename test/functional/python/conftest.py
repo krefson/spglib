@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
+import spglib
 import yaml
 
 if TYPE_CHECKING:
@@ -68,6 +69,26 @@ def get_crystal_data():
         return CrystalData.from_path(path)
 
     return _get_crystal_data
+
+
+# TODO: Scope here is not correct because it depends on symprec value
+@pytest.fixture(scope="session")
+def crystal_data_dataset(crystal_data: CrystalData, request: pytest.FixtureRequest):
+    other_kwargs = {}
+    symprec = request.node.get_closest_marker("symprec") or 1e-5
+    angle_tolerance = request.node.get_closest_marker("angle_tolerance")
+    if angle_tolerance is not None:
+        other_kwargs["angle_tolerance"] = angle_tolerance
+    dataset = spglib.get_symmetry_dataset(
+        crystal_data.cell,
+        **other_kwargs,
+    )
+    # TODO: reorganize this better
+    return {
+        "crystal_data": crystal_data,
+        "dataset": dataset,
+        "symprec": symprec,
+    }
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc):

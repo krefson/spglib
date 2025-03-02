@@ -8,30 +8,29 @@ import pytest
 from spglib import (
     get_spacegroup_type,
     get_spacegroup_type_from_symmetry,
-    get_symmetry_dataset,
 )
 
 if TYPE_CHECKING:
-    from conftest import CrystalData
+    pass
 
 
 @pytest.mark.parametrize("lattice_None", [True, False])
 def test_spacegroup_type_from_symmetry(
     lattice_None: bool,
-    crystal_data: CrystalData,
+    crystal_data_dataset,
 ):
     """Test spacegroup_type_from_symmetry."""
     if lattice_None:
         lattice = None
     else:
-        lattice = crystal_data.cell[0]
+        lattice = crystal_data_dataset["crystal_data"].cell[0]
 
-    dataset = get_symmetry_dataset(crystal_data.cell, symprec=1e-5)
+    dataset = crystal_data_dataset["dataset"]
     spgtype = get_spacegroup_type_from_symmetry(
         dataset.rotations,
         dataset.translations,
         lattice=lattice,
-        symprec=1e-5,
+        symprec=crystal_data_dataset["symprec"],
     )
 
     assert spgtype.number == dataset.number

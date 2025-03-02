@@ -1,20 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import numpy as np
-from spglib import (
-    get_symmetry_dataset,
-    get_symmetry_from_database,
-)
-
-if TYPE_CHECKING:
-    from conftest import CrystalData
+from spglib import get_symmetry_from_database
 
 
-def test_change_of_basis(crystal_data: CrystalData):
-    symprec = 1e-5
-    dataset = get_symmetry_dataset(crystal_data.cell, symprec=symprec)
+def test_change_of_basis(crystal_data_dataset):
+    crystal_data = crystal_data_dataset["crystal_data"]
+    dataset = crystal_data_dataset["dataset"]
+    symprec = crystal_data_dataset["symprec"]
     std_pos = dataset.std_positions
     tmat = dataset.transformation_matrix
     orig_shift = dataset.origin_shift
@@ -29,9 +22,8 @@ def test_change_of_basis(crystal_data: CrystalData):
         assert len(indices) == 1
 
 
-def test_std_symmetry(crystal_data: CrystalData):
-    symprec = 1e-5
-    dataset = get_symmetry_dataset(crystal_data.cell, symprec=symprec)
+def test_std_symmetry(crystal_data_dataset):
+    dataset = crystal_data_dataset["dataset"]
     symmetry = get_symmetry_from_database(dataset.hall_number)
     std_pos = dataset.std_positions
 
@@ -55,9 +47,10 @@ def test_std_symmetry(crystal_data: CrystalData):
         assert all(num_match == 1)
 
 
-def test_std_rotation(crystal_data: CrystalData):
-    symprec = 1e-5
-    dataset = get_symmetry_dataset(crystal_data.cell, symprec=symprec)
+def test_std_rotation(crystal_data_dataset):
+    crystal_data = crystal_data_dataset["crystal_data"]
+    dataset = crystal_data_dataset["dataset"]
+    symprec = crystal_data_dataset["symprec"]
     std_lat = dataset.std_lattice
     tmat = dataset.transformation_matrix
     lat = np.dot(crystal_data.cell[0].T, np.linalg.inv(tmat))
