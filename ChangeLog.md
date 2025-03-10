@@ -11,6 +11,8 @@ GitHub release pages and in the git history.
 
 ## [Unreleased]
 
+## v2.6.0 (10 Mar. 2025)
+
 ### Fortran API
 
 - Expose `spg_get_symmetry_from_database`.
