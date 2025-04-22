@@ -22,7 +22,7 @@ module spglib_f08
             & spg_get_ir_reciprocal_mesh, &
             & spg_get_stabilized_reciprocal_mesh, &
             & spg_get_error_code, spg_get_error_message, &
-            & spg_get_spacegroup_type, &
+            & spg_get_spacegroup_type, spg_get_spacegroup_type_from_symmetry, &
             & spg_get_symmetry_from_database, &
             & spg_get_magnetic_spacegroup_type, &
             & version, version_full, commit, &
@@ -178,6 +178,16 @@ module spglib_f08
             integer(c_int), intent(in) :: hall_number
             type(SpglibSpacegroupType) :: spgtype
         end function spg_get_spacegroup_type
+
+        module function spg_get_spacegroup_type_from_symmetry(rotation, translation, max_size, &
+                                                              lattice, symprec) result(spgtype)
+            integer(c_int), intent(in) :: rotation(3, 3, *)
+            real(c_double), intent(in) :: translation(3, *)
+            integer(c_int), intent(in), value :: max_size
+            real(c_double), intent(in) :: lattice(3, 3)
+            real(c_double), intent(in), value :: symprec
+            type(SpglibSpacegroupType) :: spgtype
+        end function spg_get_spacegroup_type_from_symmetry
 
         module function spg_get_magnetic_spacegroup_type(uni_number) &
             result(magspgtype)
@@ -597,6 +607,18 @@ submodule(spglib_f08) impl
             type(SpglibSpacegroupType_c) :: spgtype_c
         end function spg_get_spacegroup_type_c
 
+        function spg_get_spacegroup_type_from_symmetry_c(rotation_c, translation_c, max_size_c, lattice_c, symprec_c) &
+                & bind(c, name='spg_get_spacegroup_type_from_symmetry') result(spgtype_c)
+            import c_int, c_double, SpglibSpacegroupType_c
+            integer(c_int), intent(in) :: rotation_c(3, 3, *)
+            real(c_double), intent(in) :: translation_c(3, *)
+            integer(c_int), intent(in), value :: max_size_c
+            real(c_double), intent(in) :: lattice_c(3, 3)
+            real(c_double), intent(in), value :: symprec_c
+
+            type(SpglibSpacegroupType_c) :: spgtype_c
+        end function spg_get_spacegroup_type_from_symmetry_c
+
         function spg_get_dataset_c(lattice_c, position_c, types_c, num_atom_c, symprec_c) &
                 & bind(c, name='spg_get_dataset') result(retval)
             import c_int, c_double, c_ptr
@@ -773,6 +795,103 @@ contains
         end do
 
     end function spg_get_spacegroup_type
+
+    module function spg_get_spacegroup_type_from_symmetry(rotation, translation, max_size, &
+                                                        & lattice, symprec) result(spgtype)
+        integer(c_int), intent(in) :: rotation(3, 3, *)
+        real(c_double), intent(in) :: translation(3, *)
+        integer(c_int), intent(in), value :: max_size
+        real(c_double), intent(in) :: lattice(3, 3)
+        real(c_double), intent(in), value :: symprec
+        type(SpglibSpacegroupType) :: spgtype
+
+        type(SpglibSpacegroupType_c), allocatable:: spgtype_c
+        integer :: i
+
+        allocate (spgtype_c, source=spg_get_spacegroup_type_from_symmetry_c( &
+                             rotation, translation, max_size, lattice,symprec ))
+
+        spgtype%number = spgtype_c%number
+        spgtype%hall_number = spgtype_c%hall_number
+        spgtype%arithmetic_crystal_class_number = &
+             & spgtype_c%arithmetic_crystal_class_number
+
+        do i = 1, size(spgtype_c%international_short)
+            if (spgtype_c%international_short(i) == C_NULL_CHAR) then
+                spgtype%international_short(i:) = ' '
+                exit
+            end if
+            spgtype%international_short(i:i) = spgtype_c%international_short(i)
+        end do
+
+        do i = 1, size(spgtype_c%international_full)
+            if (spgtype_c%international_full(i) == C_NULL_CHAR) then
+                spgtype%international_full(i:) = ' '
+                exit
+            end if
+            spgtype%international_full(i:i) = spgtype_c%international_full(i)
+        end do
+
+        do i = 1, size(spgtype_c%international)
+            if (spgtype_c%international(i) == C_NULL_CHAR) then
+                spgtype%international(i:) = ' '
+                exit
+            end if
+            spgtype%international(i:i) = spgtype_c%international(i)
+        end do
+
+        do i = 1, size(spgtype_c%schoenflies)
+            if (spgtype_c%schoenflies(i) == C_NULL_CHAR) then
+                spgtype%schoenflies(i:) = ' '
+                exit
+            end if
+            spgtype%schoenflies(i:i) = spgtype_c%schoenflies(i)
+        end do
+
+        do i = 1, size(spgtype_c%hall_symbol)
+            if (spgtype_c%hall_symbol(i) == C_NULL_CHAR) then
+                spgtype%hall_symbol(i:) = ' '
+                exit
+            end if
+            spgtype%hall_symbol(i:i) = spgtype_c%hall_symbol(i)
+        end do
+
+        do i = 1, size(spgtype_c%choice)
+            if (spgtype_c%choice(i) == C_NULL_CHAR) then
+                spgtype%choice(i:) = ' '
+                exit
+            end if
+            spgtype%choice(i:i) = spgtype_c%choice(i)
+        end do
+
+        do i = 1, size(spgtype_c%pointgroup_international)
+            if (spgtype_c%pointgroup_international(i) == C_NULL_CHAR) then
+                spgtype%pointgroup_international(i:) = ' '
+                exit
+            end if
+            spgtype%pointgroup_international(i:i) = &
+                 & spgtype_c%pointgroup_international(i)
+        end do
+
+        do i = 1, size(spgtype_c%pointgroup_schoenflies)
+            if (spgtype_c%pointgroup_schoenflies(i) == C_NULL_CHAR) then
+                spgtype%pointgroup_schoenflies(i:) = ' '
+                exit
+            end if
+            spgtype%pointgroup_schoenflies(i:i) = &
+                 & spgtype_c%pointgroup_schoenflies(i)
+        end do
+
+        do i = 1, size(spgtype_c%arithmetic_crystal_class_symbol)
+            if (spgtype_c%arithmetic_crystal_class_symbol(i) == C_NULL_CHAR) then
+                spgtype%arithmetic_crystal_class_symbol(i:) = ' '
+                exit
+            end if
+            spgtype%arithmetic_crystal_class_symbol(i:i) = &
+                 & spgtype_c%arithmetic_crystal_class_symbol(i)
+        end do
+        
+    end function spg_get_spacegroup_type_from_symmetry
 
     module function spg_get_dataset(lattice, position, types, num_atom, symprec) result(dset)
 
