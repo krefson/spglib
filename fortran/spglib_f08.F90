@@ -663,46 +663,59 @@ submodule(spglib_f08) impl
         end subroutine spg_free_magnetic_dataset_c
     end interface
 contains
-    ! TODO: Modernize this function to output allocatable string
-    subroutine c_to_f_string(c_str, f_str)
-        type(c_ptr), intent(in)    :: c_str
-        character(*), intent(inout) :: f_str
 
-        character, pointer, dimension(:) :: f_ptr
-        integer :: i
+    function c_to_f_string(c_arr) result(f_str)
+        character(kind=c_char), dimension(:), intent(in) :: c_arr
+        character(:, kind=c_char), allocatable :: c_str
+        character(:), allocatable :: f_str
 
-        call c_f_pointer(c_str, f_ptr, [len(f_str)])
+        integer :: l
 
-        f_str = ' '
-        do i = 1, len(f_str)
-            if (f_ptr(i) == C_NULL_CHAR) exit
-            f_str(i:i) = f_ptr(i)
+        ! Find index of any NULL char or size(c_arr,1)+1 if none
+        do l = 1, size(c_arr)
+            if (c_arr(l) == C_NULL_CHAR) exit
         end do
-    end subroutine c_to_f_string
+
+        allocate (character(l - 1) :: c_str)     ! c_str is a scalar, so as MOLD requires a size for the transfer
+        f_str = transfer(c_arr(1:l - 1), c_str)
+
+    end function c_to_f_string
 
     module function spg_get_version() result(version)
         character(len=16) :: version
+        character(kind=c_char), dimension(:), pointer :: f_ptr
 
-        call c_to_f_string(spg_get_version_c(), version)
+        call c_f_pointer(spg_get_version_c(), f_ptr, [len(version)])
+
+        version = c_to_f_string(f_ptr)
     end function spg_get_version
 
     module function spg_get_version_full() result(version_full)
         character(len=64) :: version_full
+        character(kind=c_char), dimension(:), pointer :: f_ptr
 
-        call c_to_f_string(spg_get_version_full_c(), version_full)
+        call c_f_pointer(spg_get_version_full_c(), f_ptr, [len(version_full)])
+
+        version_full = c_to_f_string(f_ptr)
     end function spg_get_version_full
 
     module function spg_get_commit() result(commit)
         character(len=40) :: commit
+        character(kind=c_char), dimension(:), pointer :: f_ptr
 
-        call c_to_f_string(spg_get_commit_c(), commit)
+        call c_f_pointer(spg_get_commit_c(), f_ptr, [len(commit)])
+
+        commit = c_to_f_string(f_ptr)
     end function spg_get_commit
 
     module function spg_get_error_message(spglib_error) result(error_message)
         integer(kind(SPGLIB_SUCCESS)) :: spglib_error
         character(len=32) :: error_message
+        character(kind=c_char), dimension(:), pointer :: f_ptr
 
-        call c_to_f_string(spg_get_error_message_c(spglib_error), error_message)
+        call c_f_pointer(spg_get_error_message_c(spglib_error), f_ptr, [len(commit)])
+
+        error_message = c_to_f_string(f_ptr)
     end function spg_get_error_message
 
     module function spg_get_spacegroup_type(hall_number) result(spgtype)
@@ -710,7 +723,6 @@ contains
         type(SpglibSpacegroupType) :: spgtype
 
         type(SpglibSpacegroupType_c), allocatable:: spgtype_c
-        integer :: i
 
         allocate (spgtype_c, source=spg_get_spacegroup_type_c(hall_number))
 
@@ -719,80 +731,15 @@ contains
         spgtype%arithmetic_crystal_class_number = &
              & spgtype_c%arithmetic_crystal_class_number
 
-        do i = 1, size(spgtype_c%international_short)
-            if (spgtype_c%international_short(i) == C_NULL_CHAR) then
-                spgtype%international_short(i:) = ' '
-                exit
-            end if
-            spgtype%international_short(i:i) = spgtype_c%international_short(i)
-        end do
-
-        do i = 1, size(spgtype_c%international_full)
-            if (spgtype_c%international_full(i) == C_NULL_CHAR) then
-                spgtype%international_full(i:) = ' '
-                exit
-            end if
-            spgtype%international_full(i:i) = spgtype_c%international_full(i)
-        end do
-
-        do i = 1, size(spgtype_c%international)
-            if (spgtype_c%international(i) == C_NULL_CHAR) then
-                spgtype%international(i:) = ' '
-                exit
-            end if
-            spgtype%international(i:i) = spgtype_c%international(i)
-        end do
-
-        do i = 1, size(spgtype_c%schoenflies)
-            if (spgtype_c%schoenflies(i) == C_NULL_CHAR) then
-                spgtype%schoenflies(i:) = ' '
-                exit
-            end if
-            spgtype%schoenflies(i:i) = spgtype_c%schoenflies(i)
-        end do
-
-        do i = 1, size(spgtype_c%hall_symbol)
-            if (spgtype_c%hall_symbol(i) == C_NULL_CHAR) then
-                spgtype%hall_symbol(i:) = ' '
-                exit
-            end if
-            spgtype%hall_symbol(i:i) = spgtype_c%hall_symbol(i)
-        end do
-
-        do i = 1, size(spgtype_c%choice)
-            if (spgtype_c%choice(i) == C_NULL_CHAR) then
-                spgtype%choice(i:) = ' '
-                exit
-            end if
-            spgtype%choice(i:i) = spgtype_c%choice(i)
-        end do
-
-        do i = 1, size(spgtype_c%pointgroup_international)
-            if (spgtype_c%pointgroup_international(i) == C_NULL_CHAR) then
-                spgtype%pointgroup_international(i:) = ' '
-                exit
-            end if
-            spgtype%pointgroup_international(i:i) = &
-                 & spgtype_c%pointgroup_international(i)
-        end do
-
-        do i = 1, size(spgtype_c%pointgroup_schoenflies)
-            if (spgtype_c%pointgroup_schoenflies(i) == C_NULL_CHAR) then
-                spgtype%pointgroup_schoenflies(i:) = ' '
-                exit
-            end if
-            spgtype%pointgroup_schoenflies(i:i) = &
-                 & spgtype_c%pointgroup_schoenflies(i)
-        end do
-
-        do i = 1, size(spgtype_c%arithmetic_crystal_class_symbol)
-            if (spgtype_c%arithmetic_crystal_class_symbol(i) == C_NULL_CHAR) then
-                spgtype%arithmetic_crystal_class_symbol(i:) = ' '
-                exit
-            end if
-            spgtype%arithmetic_crystal_class_symbol(i:i) = &
-                 & spgtype_c%arithmetic_crystal_class_symbol(i)
-        end do
+        spgtype%international_short = c_to_f_string(spgtype_c%international_short)
+        spgtype%international_full = c_to_f_string(spgtype_c%international_full)
+        spgtype%international = c_to_f_string(spgtype_c%international)
+        spgtype%schoenflies = c_to_f_string(spgtype_c%schoenflies)
+        spgtype%hall_symbol = c_to_f_string(spgtype_c%hall_symbol)
+        spgtype%choice = c_to_f_string(spgtype_c%choice)
+        spgtype%pointgroup_international = c_to_f_string(spgtype_c%pointgroup_international)
+        spgtype%pointgroup_schoenflies = c_to_f_string(spgtype_c%pointgroup_schoenflies)
+        spgtype%arithmetic_crystal_class_symbol = c_to_f_string(spgtype_c%arithmetic_crystal_class_symbol)
 
     end function spg_get_spacegroup_type
 
@@ -806,91 +753,24 @@ contains
         type(SpglibSpacegroupType) :: spgtype
 
         type(SpglibSpacegroupType_c), allocatable:: spgtype_c
-        integer :: i
 
         allocate (spgtype_c, source=spg_get_spacegroup_type_from_symmetry_c( &
-                             rotation, translation, max_size, lattice,symprec ))
+                  rotation, translation, max_size, lattice, symprec))
 
         spgtype%number = spgtype_c%number
         spgtype%hall_number = spgtype_c%hall_number
-        spgtype%arithmetic_crystal_class_number = &
-             & spgtype_c%arithmetic_crystal_class_number
+        spgtype%arithmetic_crystal_class_number = spgtype_c%arithmetic_crystal_class_number
 
-        do i = 1, size(spgtype_c%international_short)
-            if (spgtype_c%international_short(i) == C_NULL_CHAR) then
-                spgtype%international_short(i:) = ' '
-                exit
-            end if
-            spgtype%international_short(i:i) = spgtype_c%international_short(i)
-        end do
+        spgtype%international_short = c_to_f_string(spgtype_c%international_short)
+        spgtype%international_full = c_to_f_string(spgtype_c%international_full)
+        spgtype%international = c_to_f_string(spgtype_c%international)
+        spgtype%schoenflies = c_to_f_string(spgtype_c%schoenflies)
+        spgtype%hall_symbol = c_to_f_string(spgtype_c%hall_symbol)
+        spgtype%choice = c_to_f_string(spgtype_c%choice)
+        spgtype%pointgroup_international = c_to_f_string(spgtype_c%pointgroup_international)
+        spgtype%pointgroup_schoenflies = c_to_f_string(spgtype_c%pointgroup_schoenflies)
+        spgtype%arithmetic_crystal_class_symbol = c_to_f_string(spgtype_c%arithmetic_crystal_class_symbol)
 
-        do i = 1, size(spgtype_c%international_full)
-            if (spgtype_c%international_full(i) == C_NULL_CHAR) then
-                spgtype%international_full(i:) = ' '
-                exit
-            end if
-            spgtype%international_full(i:i) = spgtype_c%international_full(i)
-        end do
-
-        do i = 1, size(spgtype_c%international)
-            if (spgtype_c%international(i) == C_NULL_CHAR) then
-                spgtype%international(i:) = ' '
-                exit
-            end if
-            spgtype%international(i:i) = spgtype_c%international(i)
-        end do
-
-        do i = 1, size(spgtype_c%schoenflies)
-            if (spgtype_c%schoenflies(i) == C_NULL_CHAR) then
-                spgtype%schoenflies(i:) = ' '
-                exit
-            end if
-            spgtype%schoenflies(i:i) = spgtype_c%schoenflies(i)
-        end do
-
-        do i = 1, size(spgtype_c%hall_symbol)
-            if (spgtype_c%hall_symbol(i) == C_NULL_CHAR) then
-                spgtype%hall_symbol(i:) = ' '
-                exit
-            end if
-            spgtype%hall_symbol(i:i) = spgtype_c%hall_symbol(i)
-        end do
-
-        do i = 1, size(spgtype_c%choice)
-            if (spgtype_c%choice(i) == C_NULL_CHAR) then
-                spgtype%choice(i:) = ' '
-                exit
-            end if
-            spgtype%choice(i:i) = spgtype_c%choice(i)
-        end do
-
-        do i = 1, size(spgtype_c%pointgroup_international)
-            if (spgtype_c%pointgroup_international(i) == C_NULL_CHAR) then
-                spgtype%pointgroup_international(i:) = ' '
-                exit
-            end if
-            spgtype%pointgroup_international(i:i) = &
-                 & spgtype_c%pointgroup_international(i)
-        end do
-
-        do i = 1, size(spgtype_c%pointgroup_schoenflies)
-            if (spgtype_c%pointgroup_schoenflies(i) == C_NULL_CHAR) then
-                spgtype%pointgroup_schoenflies(i:) = ' '
-                exit
-            end if
-            spgtype%pointgroup_schoenflies(i:i) = &
-                 & spgtype_c%pointgroup_schoenflies(i)
-        end do
-
-        do i = 1, size(spgtype_c%arithmetic_crystal_class_symbol)
-            if (spgtype_c%arithmetic_crystal_class_symbol(i) == C_NULL_CHAR) then
-                spgtype%arithmetic_crystal_class_symbol(i:) = ' '
-                exit
-            end if
-            spgtype%arithmetic_crystal_class_symbol(i:i) = &
-                 & spgtype_c%arithmetic_crystal_class_symbol(i)
-        end do
-        
     end function spg_get_spacegroup_type_from_symmetry
 
     module function spg_get_dataset(lattice, position, types, num_atom, symprec) result(dset)
@@ -905,7 +785,6 @@ contains
         type(SpglibDataset_c), pointer :: dset_c
         type(c_ptr) :: dataset_ptr_c
         integer(c_int) :: n_operations, n_atoms, n_std_atoms
-        integer :: i
         real(c_double), pointer :: translations(:, :), std_positions(:, :)
         integer(c_int), pointer :: rotations(:, :, :), wyckoffs(:), equivalent_atoms(:)
         integer(c_int), pointer :: crystallographic_orbits(:), std_types(:)
@@ -932,37 +811,10 @@ contains
             dset%primitive_lattice = dset_c%primitive_lattice
 
             ! Copy C strings to Fortran characters, converting C NULL to Fortran space padded strings
-            do i = 1, size(dset_c%international_symbol)
-                if (dset_c%international_symbol(i) == C_NULL_CHAR) then
-                    dset%international_symbol(i:) = ' '
-                    exit
-                end if
-                dset%international_symbol(i:i) = dset_c%international_symbol(i)
-            end do
-
-            do i = 1, size(dset_c%hall_symbol)
-                if (dset_c%hall_symbol(i) == C_NULL_CHAR) then
-                    dset%hall_symbol(i:) = ' '
-                    exit
-                end if
-                dset%hall_symbol(i:i) = dset_c%hall_symbol(i)
-            end do
-
-            do i = 1, size(dset_c%choice)
-                if (dset_c%choice(i) == C_NULL_CHAR) then
-                    dset%choice(i:) = ' '
-                    exit
-                end if
-                dset%choice(i:i) = dset_c%choice(i)
-            end do
-
-            do i = 1, size(dset_c%pointgroup_symbol)
-                if (dset_c%pointgroup_symbol(i) == C_NULL_CHAR) then
-                    dset%pointgroup_symbol(i:) = ' '
-                    exit
-                end if
-                dset%pointgroup_symbol(i:i) = dset_c%pointgroup_symbol(i)
-            end do
+            dset%international_symbol = c_to_f_string(dset_c%international_symbol)
+            dset%hall_symbol = c_to_f_string(dset_c%hall_symbol)
+            dset%choice = c_to_f_string(dset_c%choice)
+            dset%pointgroup_symbol = c_to_f_string(dset_c%pointgroup_symbol)
 
             n_operations = dset_c%n_operations
             n_atoms = dset_c%n_atoms
@@ -1031,28 +883,14 @@ contains
         type(SpglibMagneticSpacegroupType) :: magspgtype
 
         type(SpglibMagneticSpacegroupType_c), allocatable:: magspgtype_c
-        integer :: i
 
         allocate (magspgtype_c, source=spg_get_magnetic_spacegroup_type_c(uni_number))
 
         magspgtype%uni_number = magspgtype_c%uni_number
         magspgtype%litvin_number = magspgtype_c%litvin_number
 
-        do i = 1, size(magspgtype_c%og_number)
-            if (magspgtype_c%og_number(i) == C_NULL_CHAR) then
-                magspgtype%og_number(i:) = ' '
-                exit
-            end if
-            magspgtype%og_number(i:i) = magspgtype_c%og_number(i)
-        end do
-
-        do i = 1, size(magspgtype_c%bns_number)
-            if (magspgtype_c%bns_number(i) == C_NULL_CHAR) then
-                magspgtype%bns_number(i:) = ' '
-                exit
-            end if
-            magspgtype%bns_number(i:i) = magspgtype_c%bns_number(i)
-        end do
+        magspgtype%og_number = c_to_f_string(magspgtype_c%og_number)
+        magspgtype%bns_number = c_to_f_string(magspgtype_c%bns_number)
 
         magspgtype%number = magspgtype_c%number
         magspgtype%type = magspgtype_c%type

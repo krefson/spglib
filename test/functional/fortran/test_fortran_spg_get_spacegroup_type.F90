@@ -1,5 +1,5 @@
 module test_spg_get_spacegroup_type
-    use spglib_f08, only: spg_get_spacegroup_type,  spg_get_spacegroup_type_from_symmetry, SpglibSpacegroupType
+    use spglib_f08, only: spg_get_spacegroup_type, spg_get_spacegroup_type_from_symmetry, SpglibSpacegroupType
     use test_utils
     use C_interface_module
     use, intrinsic :: iso_fortran_env
@@ -93,32 +93,30 @@ contains
         character(len=6) :: pointgroup_schoenflies = "D2h"
         character(len=7) :: arithmetic_crystal_class_symbol = "mmmI"
 
+        lattice(:, :) = transpose(reshape([2.3685, 2.251, -1.275, 2.3685, -2.251, 1.275, -2.3685, 2.251, 1.275], [3, 3]))
 
-        lattice(:, :) = transpose(reshape([ 2.3685, 2.251, -1.275, 2.3685, -2.251, 1.275, -2.3685, 2.251, 1.275],[3,3]))
+        rotations(:, :, :) = reshape([1, 0, 0, 0, 1, 0, 0, 0, 1, &
+                                      -1, 0, 0, 0, -1, 0, 0, 0, -1, &
+                                      -1, 0, 0, -1, 0, 1, -1, 1, 0, &
+                                      1, 0, 0, 1, 0, -1, 1, -1, 0, &
+                                      0, -1, 1, 0, -1, 0, 1, -1, 0, &
+                                      0, 1, -1, 0, 1, 0, -1, 1, 0, &
+                                      0, 1, -1, 1, 0, -1, 0, 0, -1, &
+                                      0, -1, 1, -1, 0, 1, 0, 0, 1], [3, 3, num_operations])
 
-        rotations(:, :, :) = reshape([    1,  0,  0,  0,  1,  0,  0,  0,  1, &
-                                         -1,  0,  0,  0, -1,  0,  0,  0, -1, &
-                                         -1,  0,  0, -1,  0,  1, -1,  1,  0, &
-                                          1,  0,  0,  1,  0, -1,  1, -1,  0, &
-                                          0, -1,  1,  0, -1,  0,  1, -1,  0, &
-                                          0,  1, -1,  0,  1,  0, -1,  1,  0, &
-                                          0,  1, -1,  1,  0, -1,  0,  0, -1, &
-                                          0, -1,  1, -1,  0,  1,  0,  0,  1  ],[3,3,num_operations])
-
-
-        translations(:, :) = reshape([ 0.0,  0.0,  0.0, &
-                                       0.0,  0.0,  0.0, &
-                                       0.5,  0.0,  0.5, &
-                                       0.5,  0.0,  0.5, &
-                                       0.5,  0.0,  0.5, &
-                                       0.5,  0.0,  0.5, &
-                                       0.0,  0.0,  0.0, &
-                                       0.0,  0.0,  0.0], [3, num_operations])
+        translations(:, :) = reshape([0.0, 0.0, 0.0, &
+                                      0.0, 0.0, 0.0, &
+                                      0.5, 0.0, 0.5, &
+                                      0.5, 0.0, 0.5, &
+                                      0.5, 0.0, 0.5, &
+                                      0.5, 0.0, 0.5, &
+                                      0.0, 0.0, 0.0, &
+                                      0.0, 0.0, 0.0], [3, num_operations])
 
         symprec = 1e-5
 
         spg_type = spg_get_spacegroup_type_from_symmetry(rotations, translations, num_operations, lattice, symprec)
-        
+
         call assert(spg_type%number, 74)
         call assert(spg_type%international_short, international_short)
         call assert(spg_type%international_full, international_full)
@@ -132,6 +130,6 @@ contains
         call assert(spg_type%arithmetic_crystal_class_number, arithmetic_crystal_class_number)
         call assert(spg_type%arithmetic_crystal_class_symbol, arithmetic_crystal_class_symbol)
 
-      end subroutine test_spacegroup_type_from_symmetry_Imma
+    end subroutine test_spacegroup_type_from_symmetry_Imma
 
 end module test_spg_get_spacegroup_type
