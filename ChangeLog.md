@@ -11,6 +11,12 @@ GitHub release pages and in the git history.
 
 ## [Unreleased]
 
+### Fortran API
+
+- Expose `spg_get_spacegroup_type_from_symmetry`.
+
+Users can now analyse of a set of rotation and translation operations to find the Hall number and spacegroup data.
+
 ## v2.6.0 (10 Mar. 2025)
 
 ### Fortran API
