@@ -653,6 +653,10 @@ static int get_primitive_in_translation_space(double t_mat_inv[3][3],
     cel_free_cell(cell);
     cell = NULL;
 
+    if (primitive == NULL) {
+        return 0;
+    }
+
     if (primitive->cell->size != 1) {
         prm_free_primitive(primitive);
         primitive = NULL;
